@@ -1,0 +1,21 @@
+{
+  "name": "@rb/event-sourcing",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "tsc"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@eventstore/db-client": "^5.0.1",
+    "@nestjs/common": "^9.0.0",
+    "@nestjs/cqrs": "^9.0.4"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0"
+  }
+}

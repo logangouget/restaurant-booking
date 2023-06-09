@@ -22,6 +22,7 @@
   "dependencies": {
     "@nestjs/common": "^9.0.0",
     "@nestjs/core": "^9.0.0",
+    "@nestjs/cqrs": "^9.0.4",
     "@nestjs/platform-express": "^9.0.0",
     "reflect-metadata": "^0.1.13",
     "rxjs": "^7.2.0"
@@ -39,7 +40,10 @@
     "eslint": "^8.0.1",
     "eslint-config-prettier": "^8.3.0",
     "eslint-plugin-prettier": "^4.0.0",
+    "@rb/shared-events": "workspace:*",
+    "@rb/event-sourcing": "workspace:*",
     "jest": "29.5.0",
+    "jest-cucumber": "^3.0.1",
     "prettier": "^2.3.2",
     "source-map-support": "^0.5.20",
     "supertest": "^6.1.3",
@@ -56,7 +60,7 @@
       "ts"
     ],
     "rootDir": "src",
-    "testRegex": ".*\\.spec\\.ts$",
+    "testRegex": ".*\\.spec|.steps\\.ts$",
     "transform": {
       "^.+\\.(t|j)s$": "ts-jest"
     },
