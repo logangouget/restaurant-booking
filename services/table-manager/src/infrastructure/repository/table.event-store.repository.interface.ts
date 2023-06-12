@@ -1,4 +1,4 @@
-import { TableAddedEvent } from '@rb/shared-events';
+import { TableAddedEvent } from '@rb/events';
 import { Table } from '../../domain/table';
 
 export const TABLE_EVENT_STORE_REPOSITORY_INTERFACE =

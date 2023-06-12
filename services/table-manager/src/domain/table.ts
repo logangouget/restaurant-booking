@@ -4,7 +4,7 @@ import {
   TableAddedEvent,
   TableRemovedEvent,
   TableUpdatedEvent,
-} from '@rb/shared-events';
+} from '@rb/events';
 
 export class Table extends AggregateRoot {
   constructor(private readonly id: string, private readonly seats: number) {
