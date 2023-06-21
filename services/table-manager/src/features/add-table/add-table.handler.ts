@@ -6,6 +6,7 @@ import {
   TableEventStoreRepositoryInterface,
 } from '../../infrastructure/repository/table.event-store.repository.interface';
 import { Inject } from '@nestjs/common';
+import { TableAlreadyExistsError } from './errors';
 
 @CommandHandler(AddTableCommand)
 export class AddTableHandler implements ICommandHandler<AddTableCommand> {
@@ -20,7 +21,7 @@ export class AddTableHandler implements ICommandHandler<AddTableCommand> {
     );
 
     if (existingTable) {
-      throw new Error('Table already exists');
+      throw new TableAlreadyExistsError(command.id);
     }
 
     const table = new Table(command.id);
