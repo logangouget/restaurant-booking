@@ -4,7 +4,7 @@
   "description": "",
   "main": "dist/index.js",
   "scripts": {
-    "test": "jest",
+    "test:e2e": "jest",
     "build": "nest build"
   },
   "keywords": [],
