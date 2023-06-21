@@ -1,4 +1,10 @@
-import { Body, Controller, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Post,
+  UsePipes,
+  ValidationPipe,
+} from '@nestjs/common';
 import { CommandBus } from '@nestjs/cqrs';
 import { Table } from '../../domain/table';
 import { AddTableCommand } from './add-table.command';
@@ -9,6 +15,7 @@ import { ConflictException } from '@nestjs/common/exceptions';
 import { TableAlreadyExistsError } from './errors';
 
 @Controller()
+@UsePipes(new ValidationPipe())
 export class AddTableController {
   constructor(private readonly commandBus: CommandBus) {}
 

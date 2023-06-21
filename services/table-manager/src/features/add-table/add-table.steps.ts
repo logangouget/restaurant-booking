@@ -7,6 +7,7 @@ import {
   TABLE_EVENT_STORE_REPOSITORY_INTERFACE,
   TableEventStoreRepositoryInterface,
 } from '../../infrastructure/repository/table.event-store.repository.interface';
+import { TableAlreadyExistsError } from './errors';
 
 const feature = loadFeature('./add-table.feature', {
   loadRelativePath: true,
@@ -85,7 +86,7 @@ defineFeature(feature, (test) => {
     );
 
     then('It should not be added to the list of tables', () => {
-      expect(expectedError.message).toEqual('Table already exists');
+      expect(expectedError).toBeInstanceOf(TableAlreadyExistsError);
     });
   });
 });
