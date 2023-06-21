@@ -1,12 +1,17 @@
 import { Type } from '@nestjs/common';
 import { AggregateRoot, IEventHandler } from '@nestjs/cqrs';
 import { TableAddedEvent, TableEvent, TableRemovedEvent } from '@rb/events';
+import { InvalidTableIdException } from './exceptions';
 
 export class Table extends AggregateRoot<TableEvent> {
   public seats: number;
   public removed: boolean;
 
   constructor(public id: string) {
+    if (id.length === 0) {
+      throw new InvalidTableIdException(id);
+    }
+
     super();
   }
 
@@ -27,7 +32,7 @@ export class Table extends AggregateRoot<TableEvent> {
     this.seats = event.data.seats;
   }
 
-  private onTableRemovedEvent(event: TableRemovedEvent) {
+  private onTableRemovedEvent() {
     this.removed = true;
   }
 
