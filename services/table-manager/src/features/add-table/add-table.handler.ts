@@ -8,7 +8,7 @@ import {
 import { Inject } from '@nestjs/common';
 
 @CommandHandler(AddTableCommand)
-export class AddTable implements ICommandHandler<AddTableCommand> {
+export class AddTableHandler implements ICommandHandler<AddTableCommand> {
   constructor(
     @Inject(TABLE_EVENT_STORE_REPOSITORY_INTERFACE)
     private readonly tableEventStoreRepository: TableEventStoreRepositoryInterface,
@@ -23,9 +23,8 @@ export class AddTable implements ICommandHandler<AddTableCommand> {
       throw new Error('Table already exists');
     }
 
-    const table = new Table(command.id, command.seats);
-    table.add();
-    table.commit();
+    const table = new Table(command.id);
+    table.add(command.seats);
 
     await this.tableEventStoreRepository.publish(table.getUncommittedEvents());
 

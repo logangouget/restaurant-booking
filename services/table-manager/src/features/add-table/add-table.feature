@@ -7,6 +7,6 @@ Feature: Adding a table
 
     Scenario: Giving a non-unique identifier
         Given I am a manager
-        Given I have added a table with the identifier "T1" and the number of seats "4"
+        Given I have added a table with the identifier "T1"
         When I add a table with the identifier "T1" and the number of seats "4"
         Then It should not be added to the list of tables

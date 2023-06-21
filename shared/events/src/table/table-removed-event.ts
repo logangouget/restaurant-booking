@@ -1,11 +1,18 @@
-import { Event } from "../event";
+import { TableBaseEvent } from "./table-base-event";
 
 export interface TableRemovedEventData {
   id: string;
 }
 
-export class TableRemovedEvent extends Event<TableRemovedEventData> {
+export class TableRemovedEvent extends TableBaseEvent<
+  TableRemovedEventData,
+  "table-removed"
+> {
   constructor(public readonly id: string) {
-    super({ id }, "table-removed", 1);
+    super({
+      data: { id },
+      type: "table-removed",
+      version: 1,
+    });
   }
 }

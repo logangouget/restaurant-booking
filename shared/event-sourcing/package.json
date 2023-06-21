@@ -2,20 +2,44 @@
   "name": "@rb/event-sourcing",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "dist/index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "tsc"
+    "test": "jest",
+    "build": "nest build"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
     "@eventstore/db-client": "^5.0.1",
+    "@nestjs/cli": "^9.0.0",
     "@nestjs/common": "^9.0.0",
-    "@nestjs/cqrs": "^9.0.4"
+    "@nestjs/cqrs": "^9.0.4",
+    "@rb/events": "workspace:*",
+    "rxjs": "7.8.1"
   },
   "devDependencies": {
+    "@nestjs/testing": "^9.0.0",
+    "@types/jest": "29.5.1",
+    "jest": "29.5.0",
+    "ts-jest": "29.1.0",
     "typescript": "^5.0.0"
+  },
+  "jest": {
+    "moduleFileExtensions": [
+      "js",
+      "json",
+      "ts"
+    ],
+    "rootDir": "src",
+    "testRegex": ".*spec.ts$",
+    "transform": {
+      "^.+\\.ts$": "ts-jest"
+    },
+    "collectCoverageFrom": [
+      "**/*.ts"
+    ],
+    "coverageDirectory": "../coverage",
+    "testEnvironment": "node"
   }
 }

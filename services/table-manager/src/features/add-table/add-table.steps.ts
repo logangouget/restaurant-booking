@@ -1,7 +1,7 @@
 import { defineFeature, loadFeature } from 'jest-cucumber';
 import { AddTableCommand } from './add-table.command';
 import { Test, TestingModule } from '@nestjs/testing';
-import { AddTable } from './add-table.service';
+import { AddTableHandler } from './add-table.handler';
 import { Table } from '../../domain/table';
 import {
   TABLE_EVENT_STORE_REPOSITORY_INTERFACE,
@@ -14,7 +14,7 @@ const feature = loadFeature('./add-table.feature', {
 
 defineFeature(feature, (test) => {
   let testingModule: TestingModule;
-  let addTable: AddTable;
+  let addTable: AddTableHandler;
   let result: Table;
 
   const mockedTableEventStoreRepository: jest.Mocked<TableEventStoreRepositoryInterface> =
@@ -26,14 +26,14 @@ defineFeature(feature, (test) => {
   beforeAll(async () => {
     testingModule = await Test.createTestingModule({
       providers: [
-        AddTable,
+        AddTableHandler,
         {
           provide: TABLE_EVENT_STORE_REPOSITORY_INTERFACE,
           useValue: mockedTableEventStoreRepository,
         },
       ],
     }).compile();
-    addTable = testingModule.get<AddTable>(AddTable);
+    addTable = testingModule.get<AddTableHandler>(AddTableHandler);
   });
 
   test('Adding a table as a manager', ({ given, when, then }) => {
@@ -65,14 +65,11 @@ defineFeature(feature, (test) => {
       // TODO: implement
     });
 
-    given(
-      /^I have added a table with the identifier "(.*)" and the number of seats "(.*)"$/,
-      (id: string, seats: number) => {
-        mockedTableEventStoreRepository.findTableById.mockResolvedValue(
-          new Table(id, seats),
-        );
-      },
-    );
+    given(/^I have added a table with the identifier "(.*)"$/, (id: string) => {
+      mockedTableEventStoreRepository.findTableById.mockResolvedValue(
+        new Table(id),
+      );
+    });
 
     when(
       /^I add a table with the identifier "(.*)" and the number of seats "(.*)"$/,
