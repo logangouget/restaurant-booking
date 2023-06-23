@@ -3,6 +3,7 @@ import {
   jsonEvent,
   JSONEventType,
   JSONType,
+  PersistentSubscriptionToStreamResolvedEvent,
   ReadStreamOptions,
   ResolvedEvent,
   StreamNotFoundError,
@@ -63,6 +64,70 @@ export class EventStoreDbService {
         }
         throw error;
       });
+  }
+
+  async initPersistentSubscriptionToStream(
+    streamName: string,
+    groupName: string,
+  ): Promise<
+    Observable<PersistentSubscriptionToStreamResolvedEvent<JSONEventType>>
+  > {
+    const currentSubscriptions =
+      await this.client.listAllPersistentSubscriptions();
+
+    const existingSubscription = currentSubscriptions.find(
+      (sub) => sub.groupName === groupName,
+    );
+
+    if (!existingSubscription) {
+      await this.client.createPersistentSubscriptionToStream(
+        streamName,
+        groupName,
+        {
+          checkPointAfter: 2000,
+          checkPointLowerBound: 10,
+          checkPointUpperBound: 1000,
+          consumerStrategyName: 'RoundRobin',
+          extraStatistics: false,
+          historyBufferSize: 500,
+          liveBufferSize: 500,
+          maxRetryCount: 10,
+          maxSubscriberCount: 'unbounded',
+          messageTimeout: 30000,
+          readBatchSize: 20,
+          resolveLinkTos: true,
+          startFrom: 'start',
+        },
+      );
+    }
+
+    const persistentSubscription =
+      this.client.subscribeToPersistentSubscriptionToStream(
+        streamName,
+        groupName,
+      );
+
+    const observable = new Observable<
+      PersistentSubscriptionToStreamResolvedEvent<JSONEventType>
+    >((subscriber) => {
+      persistentSubscription.on('data', (event) => {
+        subscriber.next(event);
+      });
+
+      persistentSubscription.on('error', (error) => {
+        subscriber.error(error);
+      });
+
+      persistentSubscription.on('end', () => {
+        subscriber.complete();
+      });
+
+      return () => {
+        persistentSubscription.destroy();
+      };
+    });
+
+    return observable;
   }
 
   private mapEventToJsonEvent<T, X>(event: Event<T, X>) {
