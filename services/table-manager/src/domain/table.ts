@@ -1,11 +1,22 @@
 import { Type } from '@nestjs/common';
 import { AggregateRoot, IEventHandler } from '@nestjs/cqrs';
-import { TableAddedEvent, TableEvent, TableRemovedEvent } from '@rb/events';
+import {
+  TableAddedEvent,
+  TableEvent,
+  TableLockPlacedEvent,
+  TableRemovedEvent,
+} from '@rb/events';
 import { InvalidTableIdException } from './exceptions';
+
+export interface TimeSlot {
+  from: Date;
+  to: Date;
+}
 
 export class Table extends AggregateRoot<TableEvent> {
   public seats: number;
   public removed: boolean;
+  public locks = new Array<TimeSlot>();
 
   constructor(public id: string) {
     if (id.length === 0) {
@@ -16,11 +27,25 @@ export class Table extends AggregateRoot<TableEvent> {
   }
 
   add(seats: number) {
-    this.apply(new TableAddedEvent(this.id, seats));
+    this.apply(
+      new TableAddedEvent({
+        id: this.id,
+        seats,
+      }),
+    );
   }
 
   remove() {
     this.apply(new TableRemovedEvent(this.id));
+  }
+
+  placeLock(timeSlot: TimeSlot) {
+    this.apply(
+      new TableLockPlacedEvent({
+        id: this.id,
+        timeSlot,
+      }),
+    );
   }
 
   getUncommittedEvents(): TableEvent[] {
@@ -36,6 +61,10 @@ export class Table extends AggregateRoot<TableEvent> {
     this.removed = true;
   }
 
+  private onTableLockPlacedEvent(event: TableLockPlacedEvent) {
+    this.locks.push(event.data.timeSlot);
+  }
+
   protected getEventHandler<T extends TableEvent>(
     event: T,
   ): Type<IEventHandler<T>> {
@@ -44,6 +73,8 @@ export class Table extends AggregateRoot<TableEvent> {
         return this.onTableAddedEvent.bind(this);
       case 'table-removed':
         return this.onTableRemovedEvent.bind(this);
+      case 'table-lock-placed':
+        return this.onTableLockPlacedEvent.bind(this);
     }
   }
 

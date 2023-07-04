@@ -3,9 +3,9 @@ import { defineFeature, loadFeature } from 'jest-cucumber';
 import {
   TABLE_EVENT_STORE_REPOSITORY_INTERFACE,
   TableEventStoreRepositoryInterface,
-} from '../../infrastructure/repository/table.event-store.repository.interface';
+} from '@/infrastructure/repository/table.event-store.repository.interface';
 import { RemoveTableHandler } from './remove-table.handler';
-import { Table } from '../../domain/table';
+import { Table } from '@/domain/table';
 import { RemoveTableCommand } from './remove-table.command';
 
 const feature = loadFeature('./remove-table.feature', {

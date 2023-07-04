@@ -1,8 +1,11 @@
+import { z } from "zod";
 import { TableBaseEvent } from "./table-base-event";
 
-export interface TableRemovedEventData {
-  id: string;
-}
+export const tableRemovedEventDataSchema = z.object({
+  id: z.string(),
+});
+
+export type TableRemovedEventData = z.infer<typeof tableRemovedEventDataSchema>;
 
 export class TableRemovedEvent extends TableBaseEvent<
   TableRemovedEventData,
@@ -15,4 +18,10 @@ export class TableRemovedEvent extends TableBaseEvent<
       version: 1,
     });
   }
+}
+
+export function parseTableRemovedEventData(
+  data: unknown
+): TableRemovedEventData {
+  return tableRemovedEventDataSchema.parse(data);
 }

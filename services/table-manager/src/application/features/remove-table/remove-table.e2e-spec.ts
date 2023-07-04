@@ -2,7 +2,7 @@ import { INestApplication } from '@nestjs/common/interfaces';
 import { Test, TestingModule } from '@nestjs/testing';
 import * as request from 'supertest';
 import { v4 as uuidv4 } from 'uuid';
-import { AppModule } from '../../app.module';
+import { AppModule } from '@/app.module';
 
 describe('Add table E2E - /tables (DELETE)', () => {
   let testingModule: TestingModule;

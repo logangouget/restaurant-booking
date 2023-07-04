@@ -1,7 +1,7 @@
 import { Controller, Delete, Param, NotFoundException } from '@nestjs/common';
 import { CommandBus } from '@nestjs/cqrs';
 import { RemoveTableCommand } from './remove-table.command';
-import { TableNotFoundError } from './errors';
+import { TableNotFoundError } from '@/application/errors';
 import { ApiProperty, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { RemoveTableResponse } from './dto/remove-table.response';
 

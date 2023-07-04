@@ -1,14 +1,21 @@
+import { Table } from '@/domain/table';
 import { Injectable } from '@nestjs/common';
 import {
   EventStoreDbService,
   JSONEventType,
   ResolvedEvent,
 } from '@rb/event-sourcing';
-import { TableAddedEvent, TableAddedEventData } from '@rb/events';
+import {
+  TableAddedEvent,
+  TableEventType,
+  TableLockPlacedEvent,
+  TableRemovedEvent,
+  parseTableAddedEventData,
+  parseTableLockPlacedEventData,
+  parseTableRemovedEventData,
+} from '@rb/events';
 import { TableBaseEvent } from '@rb/events/dist/table/table-base-event';
 import { lastValueFrom, toArray } from 'rxjs';
-import { Table } from '../../domain/table';
-
 import { TableEventStoreRepositoryInterface } from './table.event-store.repository.interface';
 
 @Injectable()
@@ -28,9 +35,7 @@ export class TableEventStoreRepository
       return null;
     }
 
-    const $events = this.eventStoreDbService.readStream(
-      TableBaseEvent.buildStreamName(id),
-    );
+    const $events = this.eventStoreDbService.readStream(streamName);
 
     const resolvedEvents = await lastValueFrom($events.pipe(toArray()));
 
@@ -53,11 +58,21 @@ export class TableEventStoreRepository
     resolvedEvents: ResolvedEvent<JSONEventType>[],
   ) {
     return resolvedEvents.map((resolvedEvent) => {
-      switch (resolvedEvent.event.type) {
+      switch (resolvedEvent.event.type as TableEventType) {
         case 'table-added': {
-          const data = resolvedEvent.event
-            .data as unknown as TableAddedEventData;
-          return new TableAddedEvent(data.id, data.seats);
+          const data = parseTableAddedEventData(resolvedEvent.event.data);
+
+          return new TableAddedEvent(data);
+        }
+        case 'table-removed': {
+          const data = parseTableRemovedEventData(resolvedEvent.event.data);
+
+          return new TableRemovedEvent(data.id);
+        }
+        case 'table-lock-placed': {
+          const data = parseTableLockPlacedEventData(resolvedEvent.event.data);
+
+          return new TableLockPlacedEvent(data);
         }
         default:
           throw new Error(

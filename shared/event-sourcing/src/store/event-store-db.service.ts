@@ -1,8 +1,10 @@
 import {
   EventStoreDBClient,
+  EventType,
   jsonEvent,
   JSONEventType,
   JSONType,
+  PersistentSubscriptionToStream,
   PersistentSubscriptionToStreamResolvedEvent,
   ReadStreamOptions,
   ResolvedEvent,
@@ -21,6 +23,7 @@ export class EventStoreDbService {
 
   async publish<T, X>(event: Event<T, X>): Promise<void> {
     const jsonEvent = this.mapEventToJsonEvent(event);
+
     await this.client.appendToStream(event.streamName, jsonEvent);
   }
 
@@ -69,9 +72,12 @@ export class EventStoreDbService {
   async initPersistentSubscriptionToStream(
     streamName: string,
     groupName: string,
-  ): Promise<
-    Observable<PersistentSubscriptionToStreamResolvedEvent<JSONEventType>>
-  > {
+  ): Promise<{
+    $source: Observable<
+      PersistentSubscriptionToStreamResolvedEvent<JSONEventType>
+    >;
+    subscription: PersistentSubscriptionToStream<EventType>;
+  }> {
     const currentSubscriptions =
       await this.client.listAllPersistentSubscriptions();
 
@@ -127,13 +133,22 @@ export class EventStoreDbService {
       };
     });
 
-    return observable;
+    return {
+      $source: observable,
+      subscription: persistentSubscription,
+    };
   }
 
   private mapEventToJsonEvent<T, X>(event: Event<T, X>) {
+    const { correlationId, ...metadata } = event.metadata ?? {};
+
     return jsonEvent({
       type: event.type as string,
       data: event.data as JSONType,
+      metadata: {
+        $correlationId: correlationId,
+        ...metadata,
+      },
     });
   }
 }
