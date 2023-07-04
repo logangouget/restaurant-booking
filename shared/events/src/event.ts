@@ -1,5 +1,14 @@
+export interface EventMetadata {
+  correlationId?: string;
+}
+
+export interface JSONMetadata {
+  $correlationId?: string;
+}
+
 export class Event<Data, Type> {
   data: Data;
+  metadata: EventMetadata;
   type: Type;
   version: number;
   streamName: string;
@@ -9,8 +18,12 @@ export class Event<Data, Type> {
     type,
     version,
     streamName,
+    metadata,
   }: {
     data: Data;
+    metadata?: {
+      correlationId?: string;
+    };
     type: Type;
     version: number;
     streamName: string;
@@ -19,5 +32,10 @@ export class Event<Data, Type> {
     this.type = type;
     this.version = version;
     this.streamName = streamName;
+    this.metadata = metadata ?? {};
+  }
+
+  setCorrelationId(correlationId: string) {
+    this.metadata.correlationId = correlationId;
   }
 }

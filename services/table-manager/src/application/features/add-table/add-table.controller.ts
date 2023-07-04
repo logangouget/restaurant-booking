@@ -6,7 +6,7 @@ import {
   ValidationPipe,
 } from '@nestjs/common';
 import { CommandBus } from '@nestjs/cqrs';
-import { Table } from '../../domain/table';
+import { Table } from '@/domain/table';
 import { AddTableCommand } from './add-table.command';
 import { AddTableRequest } from './dto/add-table.request';
 import { AddTableResponse } from './dto/add-table.response';

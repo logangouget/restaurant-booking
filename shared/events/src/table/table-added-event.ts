@@ -1,16 +1,26 @@
+import { z } from "zod";
 import { TableBaseEvent } from "./table-base-event";
 
-export interface TableAddedEventData {
-  id: string;
-  seats: number;
-}
+export const tableAddedEventDataSchema = z.object({
+  id: z.string(),
+  seats: z.number(),
+});
 
-export class TableAddedEvent extends TableBaseEvent<TableAddedEventData, "table-added"> {
-  constructor(public readonly id: string, public readonly seats: number) {
+export type TableAddedEventData = z.infer<typeof tableAddedEventDataSchema>;
+
+export class TableAddedEvent extends TableBaseEvent<
+  TableAddedEventData,
+  "table-added"
+> {
+  constructor(data: { id: string; seats: number }) {
     super({
-      data: { id, seats },
+      data,
       type: "table-added",
       version: 1,
     });
   }
+}
+
+export function parseTableAddedEventData(data: unknown): TableAddedEventData {
+  return tableAddedEventDataSchema.parse(data);
 }
