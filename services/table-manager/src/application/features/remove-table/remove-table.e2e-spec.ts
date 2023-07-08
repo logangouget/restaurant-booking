@@ -3,6 +3,8 @@ import { Test, TestingModule } from '@nestjs/testing';
 import * as request from 'supertest';
 import { v4 as uuidv4 } from 'uuid';
 import { AppModule } from '@/app.module';
+import { ConfigService } from '@nestjs/config';
+import { mockedConfigService } from '@/test/mocked-config-service';
 
 describe('Add table E2E - /tables (DELETE)', () => {
   let testingModule: TestingModule;
@@ -11,7 +13,10 @@ describe('Add table E2E - /tables (DELETE)', () => {
   beforeAll(async () => {
     testingModule = await Test.createTestingModule({
       imports: [AppModule],
-    }).compile();
+    })
+      .overrideProvider(ConfigService)
+      .useValue(mockedConfigService)
+      .compile();
 
     app = testingModule.createNestApplication();
     await app.init();

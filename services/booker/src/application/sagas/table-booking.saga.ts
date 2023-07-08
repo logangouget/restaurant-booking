@@ -8,24 +8,30 @@ import { CommandBus } from '@nestjs/cqrs';
 import { EventStoreDbService, JSONType } from '@rb/event-sourcing';
 import { JSONMetadata, parseTableLockPlacedEventData } from '@rb/events';
 import { ConfirmTableBookingCommand } from '../features/confirm-table-booking/confirm-table-booking.command';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class TableBookingSaga {
   constructor(
     private readonly eventStoreDbService: EventStoreDbService,
     private readonly commandBus: CommandBus,
+    private readonly configService: ConfigService,
   ) {}
 
   async init() {
     const streamName = '$et-table-lock-placed';
-    const groupName = 'table-lock-placed';
-    const { $source, subscription } =
+
+    const groupName = this.configService.get<string>(
+      'TABLE_BOOKING_SAGA_GROUP_NAME',
+    );
+
+    const { source$, subscription } =
       await this.eventStoreDbService.initPersistentSubscriptionToStream(
         streamName,
         groupName,
       );
 
-    $source.subscribe((resolvedEvent) => {
+    source$.subscribe((resolvedEvent) => {
       this.onTableLocked(resolvedEvent, subscription);
     });
   }

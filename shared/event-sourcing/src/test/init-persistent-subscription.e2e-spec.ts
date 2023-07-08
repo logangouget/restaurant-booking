@@ -127,13 +127,13 @@ describe('InitPersistentSubscription', () => {
       });
 
       it('should receive events', async () => {
-        const { $source } =
+        const { source$ } =
           await eventStoreDbService.initPersistentSubscriptionToStream(
             testStreamName,
             testGroupName,
           );
 
-        const events = await lastValueFrom($source.pipe(take(3), toArray()));
+        const events = await lastValueFrom(source$.pipe(take(3), toArray()));
 
         expect(events).toHaveLength(3);
         expect(events[0].event.data).toEqual({ foo: 'bar', event: 1 });
@@ -163,7 +163,7 @@ describe('InitPersistentSubscription', () => {
       });
 
       it('should receive events published after subscription', async () => {
-        const { $source } =
+        const { source$ } =
           await eventStoreDbService.initPersistentSubscriptionToStream(
             testStreamName,
             testGroupName,
@@ -171,7 +171,7 @@ describe('InitPersistentSubscription', () => {
 
         const events = [];
 
-        $source.subscribe((event) => {
+        source$.subscribe((event) => {
           events.push(event);
         });
 

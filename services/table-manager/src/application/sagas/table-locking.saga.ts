@@ -8,24 +8,30 @@ import { CommandBus } from '@nestjs/cqrs';
 import { EventStoreDbService, JSONType } from '@rb/event-sourcing';
 import { JSONMetadata, parseTableBookingInitiatedEventData } from '@rb/events';
 import { PlaceTableLockCommand } from '../features/place-table-lock/place-table-lock.command';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class TableLockingSaga {
   constructor(
     private readonly eventStoreDbService: EventStoreDbService,
     private readonly commandBus: CommandBus,
+    private readonly configService: ConfigService,
   ) {}
 
   async init() {
     const streamName = '$et-table-booking-initiated';
-    const groupName = 'table-booking-initiated';
-    const { $source, subscription } =
+
+    const groupName = this.configService.get<string>(
+      'TABLE_LOCKING_SAGA_GROUP_NAME',
+    );
+
+    const { source$, subscription } =
       await this.eventStoreDbService.initPersistentSubscriptionToStream(
         streamName,
         groupName,
       );
 
-    $source.subscribe((resolvedEvent) => {
+    source$.subscribe((resolvedEvent) => {
       this.onTableBookingInitiated(resolvedEvent, subscription);
     });
   }

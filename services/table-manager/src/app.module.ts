@@ -11,11 +11,23 @@ import {
 import { CqrsModule } from '@nestjs/cqrs';
 import { EVENT_STORE_DB_CLIENT, EventStoreModule } from '@rb/event-sourcing';
 import { PlaceTableLockModule } from './application/features/place-table-lock/place-table-lock.module';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 
 @Module({
   imports: [
+    ConfigModule.forRoot({
+      isGlobal: true,
+    }),
     CqrsModule,
-    EventStoreModule,
+    EventStoreModule.registerAsync({
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) => {
+        return {
+          endpoint: configService.get<string>('EVENT_STORE_ENDPOINT'),
+          insecure: configService.get<boolean>('EVENT_STORE_INSECURE'),
+        };
+      },
+    }),
     AddTableModule,
     RemoveTableModule,
     PlaceTableLockModule,

@@ -15,6 +15,7 @@
     "@eventstore/db-client": "^5.0.1",
     "@nestjs/cli": "^9.0.0",
     "@nestjs/common": "^9.0.0",
+    "@nestjs/config": "^3.0.0",
     "@nestjs/cqrs": "^9.0.4",
     "@rb/events": "workspace:*",
     "rxjs": "7.8.1"
