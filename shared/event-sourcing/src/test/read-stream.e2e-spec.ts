@@ -74,9 +74,9 @@ describe('Read events from a stream', () => {
     });
 
     it('should return the events', async () => {
-      const $source = eventStoreDbService.readStream(testStreamName);
+      const source$ = eventStoreDbService.readStream(testStreamName);
 
-      const events = await lastValueFrom($source.pipe(toArray()));
+      const events = await lastValueFrom(source$.pipe(toArray()));
 
       expect(events.length).toBe(3);
       expect(events[0].event.data).toEqual({ foo: 'bar', event: 1 });

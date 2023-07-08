@@ -1,8 +1,10 @@
+import { AppModule } from '@/app.module';
+import { mockedConfigService } from '@/test/mocked-config-service';
 import { INestApplication } from '@nestjs/common/interfaces';
+import { ConfigService } from '@nestjs/config';
 import { Test, TestingModule } from '@nestjs/testing';
 import * as request from 'supertest';
 import { v4 as uuidv4 } from 'uuid';
-import { AppModule } from '@/app.module';
 
 describe('Book table E2E - /bookings/initiate (POST)', () => {
   let testingModule: TestingModule;
@@ -11,9 +13,13 @@ describe('Book table E2E - /bookings/initiate (POST)', () => {
   beforeAll(async () => {
     testingModule = await Test.createTestingModule({
       imports: [AppModule],
-    }).compile();
+    })
+      .overrideProvider(ConfigService)
+      .useValue(mockedConfigService)
+      .compile();
 
     app = testingModule.createNestApplication();
+
     await app.init();
   });
 

@@ -22,6 +22,7 @@
   "dependencies": {
     "@eventstore/db-client": "^5.0.1",
     "@nestjs/common": "^10.0.4",
+    "@nestjs/config": "^3.0.0",
     "@nestjs/core": "^10.0.4",
     "@nestjs/cqrs": "^10.0.1",
     "@nestjs/platform-express": "^10.0.4",

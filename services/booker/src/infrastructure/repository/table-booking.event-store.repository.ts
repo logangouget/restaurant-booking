@@ -38,9 +38,9 @@ export class TableBookingEventStoreRepository
       return [];
     }
 
-    const $events = this.eventStoreDbService.readStream(streamName);
+    const events$ = this.eventStoreDbService.readStream(streamName);
 
-    const resolvedEvents = await lastValueFrom($events.pipe(toArray()));
+    const resolvedEvents = await lastValueFrom(events$.pipe(toArray()));
 
     if (resolvedEvents.length === 0) {
       return [];
@@ -85,9 +85,9 @@ export class TableBookingEventStoreRepository
       return null;
     }
 
-    const $events = this.eventStoreDbService.readStream(streamName);
+    const events$ = this.eventStoreDbService.readStream(streamName);
 
-    const resolvedEvents = await lastValueFrom($events.pipe(toArray()));
+    const resolvedEvents = await lastValueFrom(events$.pipe(toArray()));
 
     if (resolvedEvents.length === 0) {
       return null;

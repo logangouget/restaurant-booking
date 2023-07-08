@@ -1,3 +1,5 @@
+import { SlotUnavailableException } from '@/domain/exceptions';
+import { TableBooking } from '@/domain/table-booking';
 import {
   Body,
   ConflictException,
@@ -10,8 +12,6 @@ import { CommandBus } from '@nestjs/cqrs';
 import { BookTableRequest } from './dto/book-table.request';
 import { BookTableResponse } from './dto/book-table.response';
 import { InitiateTableBookingCommand } from './initiate-table-booking.command';
-import { TableBooking } from '@/domain/table-booking';
-import { SlotUnavailableException } from '@/domain/exceptions';
 
 @Controller()
 @UsePipes(

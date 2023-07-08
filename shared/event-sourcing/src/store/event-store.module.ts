@@ -1,26 +1,36 @@
-import { EventStoreDBClient } from '@eventstore/db-client';
 import { Global, Module } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config';
 import {
-  EventStoreDbService,
   EVENT_STORE_DB_CLIENT,
+  EventStoreDbService,
 } from './event-store-db.service';
+import {
+  ConfigurableModuleClass,
+  EventStoreModuleOptions,
+  MODULE_OPTIONS_TOKEN,
+} from './event-store.module-definition';
+import { EventStoreDBClient } from '@eventstore/db-client';
 
 @Global()
 @Module({
+  imports: [ConfigModule],
   providers: [
+    EventStoreDbService,
     {
       provide: EVENT_STORE_DB_CLIENT,
-      useValue: new EventStoreDBClient(
-        {
-          endpoint: 'localhost:2113',
-        },
-        {
-          insecure: true,
-        },
-      ),
+      useFactory(options: EventStoreModuleOptions) {
+        return new EventStoreDBClient(
+          {
+            endpoint: options.endpoint,
+          },
+          {
+            insecure: options.insecure,
+          },
+        );
+      },
+      inject: [MODULE_OPTIONS_TOKEN],
     },
-    EventStoreDbService,
   ],
   exports: [EventStoreDbService, EVENT_STORE_DB_CLIENT],
 })
-export class EventStoreModule {}
+export class EventStoreModule extends ConfigurableModuleClass {}

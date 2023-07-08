@@ -1,15 +1,27 @@
+import { InitiateTableBookingModule } from '@/application/features/initiate-table-booking/initiate-table-booking.module';
 import { EventStoreDBClient } from '@eventstore/db-client';
 import { Inject, Module, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
-import { InitiateTableBookingModule } from '@/application/features/initiate-table-booking/initiate-table-booking.module';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import { CqrsModule } from '@nestjs/cqrs';
 import { EVENT_STORE_DB_CLIENT, EventStoreModule } from '@rb/event-sourcing';
 import { ConfirmTableBookingModule } from './application/features/confirm-table-booking/confirm-table-booking.module';
 import { TableBookingSaga } from './application/sagas/table-booking.saga';
-import { CqrsModule } from '@nestjs/cqrs';
 
 @Module({
   imports: [
+    ConfigModule.forRoot({
+      isGlobal: true,
+    }),
     CqrsModule,
-    EventStoreModule,
+    EventStoreModule.registerAsync({
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) => {
+        return {
+          endpoint: configService.get<string>('EVENT_STORE_ENDPOINT'),
+          insecure: configService.get<boolean>('EVENT_STORE_INSECURE'),
+        };
+      },
+    }),
     InitiateTableBookingModule,
     ConfirmTableBookingModule,
   ],

@@ -10,15 +10,17 @@ import {
   ResolvedEvent,
   StreamNotFoundError,
 } from '@eventstore/db-client';
-import { Inject } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { Event } from '@rb/events';
 import { firstValueFrom, Observable } from 'rxjs';
 
 export const EVENT_STORE_DB_CLIENT = 'EVENT_STORE_DB_CLIENT';
 
+@Injectable()
 export class EventStoreDbService {
   constructor(
-    @Inject(EVENT_STORE_DB_CLIENT) private readonly client: EventStoreDBClient,
+    @Inject(EVENT_STORE_DB_CLIENT)
+    private readonly client: EventStoreDBClient,
   ) {}
 
   async publish<T, X>(event: Event<T, X>): Promise<void> {
@@ -73,7 +75,7 @@ export class EventStoreDbService {
     streamName: string,
     groupName: string,
   ): Promise<{
-    $source: Observable<
+    source$: Observable<
       PersistentSubscriptionToStreamResolvedEvent<JSONEventType>
     >;
     subscription: PersistentSubscriptionToStream<EventType>;
@@ -134,7 +136,7 @@ export class EventStoreDbService {
     });
 
     return {
-      $source: observable,
+      source$: observable,
       subscription: persistentSubscription,
     };
   }
