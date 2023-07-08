@@ -6,6 +6,7 @@ import { CqrsModule } from '@nestjs/cqrs';
 import { EVENT_STORE_DB_CLIENT, EventStoreModule } from '@rb/event-sourcing';
 import { ConfirmTableBookingModule } from './application/features/confirm-table-booking/confirm-table-booking.module';
 import { TableBookingSaga } from './application/sagas/table-booking.saga';
+import { CancelTableBookingModule } from './application/features/cancel-table-booking/cancel-table-booking.module';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { TableBookingSaga } from './application/sagas/table-booking.saga';
     }),
     InitiateTableBookingModule,
     ConfirmTableBookingModule,
+    CancelTableBookingModule,
   ],
   providers: [TableBookingSaga],
 })

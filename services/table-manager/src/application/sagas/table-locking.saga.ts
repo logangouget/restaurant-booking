@@ -9,6 +9,7 @@ import { EventStoreDbService, JSONType } from '@rb/event-sourcing';
 import { JSONMetadata, parseTableBookingInitiatedEventData } from '@rb/events';
 import { PlaceTableLockCommand } from '../features/place-table-lock/place-table-lock.command';
 import { ConfigService } from '@nestjs/config';
+import { TableNotFoundError } from '../errors';
 
 @Injectable()
 export class TableLockingSaga {
@@ -25,7 +26,7 @@ export class TableLockingSaga {
       'TABLE_LOCKING_SAGA_GROUP_NAME',
     );
 
-    const { source$, subscription } =
+    const { source$, subscription: subscription } =
       await this.eventStoreDbService.initPersistentSubscriptionToStream(
         streamName,
         groupName,
@@ -59,7 +60,15 @@ export class TableLockingSaga {
       eventMetadata.$correlationId,
     );
 
-    await this.commandBus.execute(command);
+    try {
+      await this.commandBus.execute(command);
+    } catch (error) {
+      if (error instanceof TableNotFoundError) {
+        await subscription.ack(resolvedEvent);
+        return;
+      }
+      throw error;
+    }
 
     await subscription.ack(resolvedEvent);
   }

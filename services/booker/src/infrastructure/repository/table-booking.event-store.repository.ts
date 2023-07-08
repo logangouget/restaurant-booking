@@ -7,10 +7,12 @@ import {
 } from '@rb/event-sourcing';
 import {
   JSONMetadata,
+  TableBookingCancelledEvent,
   TableBookingConfirmedEvent,
   TableBookingEvent,
   TableBookingEventType,
   TableBookingInitiatedEvent,
+  parseTableBookingCancelledEventData,
   parseTableBookingConfirmedEventData,
   parseTableBookingInitiatedEventData,
 } from '@rb/events';
@@ -143,6 +145,24 @@ export class TableBookingEventStoreRepository
           const metadata = resolvedEvent.event.metadata as JSONMetadata;
 
           return new TableBookingConfirmedEvent(
+            {
+              id: data.id,
+              tableId: data.tableId,
+              timeSlot: data.timeSlot,
+            },
+            {
+              correlationId: metadata.$correlationId,
+            },
+          );
+        }
+        case 'table-booking-cancelled': {
+          const data = parseTableBookingCancelledEventData(
+            resolvedEvent.event.data,
+          );
+
+          const metadata = resolvedEvent.event.metadata as JSONMetadata;
+
+          return new TableBookingCancelledEvent(
             {
               id: data.id,
               tableId: data.tableId,

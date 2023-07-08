@@ -1,21 +1,21 @@
-import { TableBooking } from '@/domain/table-booking';
-import { Test, TestingModule } from '@nestjs/testing';
-import { defineFeature, loadFeature } from 'jest-cucumber';
-import { ConfirmTableBookingCommand } from './confirm-table-booking.command';
-import { ConfirmTableBookingHandler } from './confirm-table-booking.handler';
 import {
-  TABLE_BOOKING_EVENT_STORE_REPOSITORY_INTERFACE,
   TableBookingEventStoreRepositoryInterface,
+  TABLE_BOOKING_EVENT_STORE_REPOSITORY_INTERFACE,
 } from '@/infrastructure/repository/table-booking.event-store.repository.interface';
+import { Test, TestingModule } from '@nestjs/testing';
+import { loadFeature, defineFeature } from 'jest-cucumber';
+import { CancelTableBookingHandler } from './cancel-table-booking.handler';
+import { TableBooking } from '@/domain/table-booking';
+import { CancelTableBookingCommand } from './cancel-table-booking.command';
 import { TableBookingNotFoundError } from '@/application/errors';
 
-const feature = loadFeature('./confirm-table-booking.feature', {
+const feature = loadFeature('./cancel-table-booking.feature', {
   loadRelativePath: true,
 });
 
 defineFeature(feature, (test) => {
   let testingModule: TestingModule;
-  let confirmTableBooking: ConfirmTableBookingHandler;
+  let cancelTableBooking: CancelTableBookingHandler;
 
   const mockedTableBookingEventStoreRepository: jest.Mocked<TableBookingEventStoreRepositoryInterface> =
     {
@@ -27,19 +27,19 @@ defineFeature(feature, (test) => {
   beforeAll(async () => {
     testingModule = await Test.createTestingModule({
       providers: [
-        ConfirmTableBookingHandler,
+        CancelTableBookingHandler,
         {
           provide: TABLE_BOOKING_EVENT_STORE_REPOSITORY_INTERFACE,
           useValue: mockedTableBookingEventStoreRepository,
         },
       ],
     }).compile();
-    confirmTableBooking = testingModule.get<ConfirmTableBookingHandler>(
-      ConfirmTableBookingHandler,
+    cancelTableBooking = testingModule.get<CancelTableBookingHandler>(
+      CancelTableBookingHandler,
     );
   });
 
-  test('Confirm table booking', ({ given, when, then }) => {
+  test('Cancel table booking', ({ given, when, then }) => {
     let result: TableBooking;
     let tableId: string;
 
@@ -61,16 +61,14 @@ defineFeature(feature, (test) => {
       },
     );
 
-    when('booking is going to be confirmed', async () => {
-      const command = new ConfirmTableBookingCommand(
-        tableId,
-        'x-correlation-id',
+    when('booking is going to be cancelled', async () => {
+      result = await cancelTableBooking.execute(
+        new CancelTableBookingCommand(tableId, 'x-correlation-id'),
       );
-      result = await confirmTableBooking.execute(command);
     });
 
-    then('booking status is updated to confirmed', () => {
-      expect(result.status).toBe('confirmed');
+    then('booking status is updated to cancelled', () => {
+      expect(result.status).toBe('cancelled');
     });
   });
 
@@ -86,13 +84,14 @@ defineFeature(feature, (test) => {
       },
     );
 
-    when('booking is going to be confirmed', async () => {
+    when('booking is going to be cancelled', async () => {
       try {
-        const command = new ConfirmTableBookingCommand(
-          'non-existing-table-id',
-          'x-correlation-id',
+        await cancelTableBooking.execute(
+          new CancelTableBookingCommand(
+            'non-existing-table-id',
+            'x-correlation-id',
+          ),
         );
-        await confirmTableBooking.execute(command);
       } catch (err) {
         error = err;
       }

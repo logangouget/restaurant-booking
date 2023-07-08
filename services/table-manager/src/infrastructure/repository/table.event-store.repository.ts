@@ -6,6 +6,7 @@ import {
   ResolvedEvent,
 } from '@rb/event-sourcing';
 import {
+  Event,
   TableAddedEvent,
   TableEventType,
   TableLockPlacedEvent,
@@ -48,7 +49,7 @@ export class TableEventStoreRepository
     return Table.fromEventsHistory(mappedEvents);
   }
 
-  async publish(events: TableAddedEvent[]): Promise<void> {
+  async publish(events: Event<unknown, unknown>[]): Promise<void> {
     for (const event of events) {
       await this.eventStoreDbService.publish(event);
     }

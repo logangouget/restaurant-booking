@@ -5,6 +5,7 @@ import { TableRemovedEvent } from "./table-removed-event";
 export * from "./table-added-event";
 export * from "./table-removed-event";
 export * from "./table-lock-placed-event";
+export * from "./table-lock-placement-failed-event";
 
 export type TableEvent =
   | TableAddedEvent
