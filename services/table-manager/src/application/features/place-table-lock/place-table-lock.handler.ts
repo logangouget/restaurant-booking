@@ -7,6 +7,7 @@ import { PlaceTableLockCommand } from './place-table-lock.command';
 import { Inject } from '@nestjs/common';
 import { Table } from '@/domain/table';
 import { TableNotFoundError } from '@/application/errors';
+import { TableLockPlacementFailedEvent } from '@rb/events';
 
 @CommandHandler(PlaceTableLockCommand)
 export class PlaceTableLockHandler
@@ -23,6 +24,15 @@ export class PlaceTableLockHandler
     );
 
     if (!table) {
+      const failureEvent = new TableLockPlacementFailedEvent(
+        command.id,
+        command.timeSlot,
+        'Table not found',
+        command.correlationId,
+      );
+
+      await this.tableEventStoreRepository.publish([failureEvent]);
+
       throw new TableNotFoundError(command.id);
     }
 
