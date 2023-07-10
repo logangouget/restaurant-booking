@@ -1,10 +1,7 @@
 import { TableBooking, TimeSlot } from '@/domain/table-booking';
-import { Injectable } from '@nestjs/common';
-import {
-  EventStoreDbService,
-  JSONEventType,
-  ResolvedEvent,
-} from '@rb/event-sourcing';
+import { Inject, Injectable } from '@nestjs/common';
+import { EVENT_STORE_SERVICE, EventStoreService } from '@rb/event-sourcing';
+import { EventStoreEvent } from '@rb/event-sourcing/dist/store/event-store-event';
 import {
   JSONMetadata,
   TableBookingCancelledEvent,
@@ -24,7 +21,10 @@ import { TableBookingEventStoreRepositoryInterface } from './table-booking.event
 export class TableBookingEventStoreRepository
   implements TableBookingEventStoreRepositoryInterface
 {
-  constructor(private readonly eventStoreDbService: EventStoreDbService) {}
+  constructor(
+    @Inject(EVENT_STORE_SERVICE)
+    private readonly eventStoreDbService: EventStoreService,
+  ) {}
 
   async findBookingsByTimeSlot(
     tableId: string,
@@ -114,17 +114,13 @@ export class TableBookingEventStoreRepository
     }
   }
 
-  private mapEventsFromJsonEvents(
-    resolvedEvents: ResolvedEvent<JSONEventType>[],
-  ) {
+  private mapEventsFromJsonEvents(resolvedEvents: EventStoreEvent[]) {
     return resolvedEvents.map((resolvedEvent) => {
-      switch (resolvedEvent.event.type as TableBookingEventType) {
+      switch (resolvedEvent.type as TableBookingEventType) {
         case 'table-booking-initiated': {
-          const data = parseTableBookingInitiatedEventData(
-            resolvedEvent.event.data,
-          );
+          const data = parseTableBookingInitiatedEventData(resolvedEvent.data);
 
-          const metadata = resolvedEvent.event.metadata as JSONMetadata;
+          const metadata = resolvedEvent.metadata as JSONMetadata;
 
           return new TableBookingInitiatedEvent(
             {
@@ -138,11 +134,9 @@ export class TableBookingEventStoreRepository
           );
         }
         case 'table-booking-confirmed': {
-          const data = parseTableBookingConfirmedEventData(
-            resolvedEvent.event.data,
-          );
+          const data = parseTableBookingConfirmedEventData(resolvedEvent.data);
 
-          const metadata = resolvedEvent.event.metadata as JSONMetadata;
+          const metadata = resolvedEvent.metadata as JSONMetadata;
 
           return new TableBookingConfirmedEvent(
             {
@@ -156,11 +150,9 @@ export class TableBookingEventStoreRepository
           );
         }
         case 'table-booking-cancelled': {
-          const data = parseTableBookingCancelledEventData(
-            resolvedEvent.event.data,
-          );
+          const data = parseTableBookingCancelledEventData(resolvedEvent.data);
 
-          const metadata = resolvedEvent.event.metadata as JSONMetadata;
+          const metadata = resolvedEvent.metadata as JSONMetadata;
 
           return new TableBookingCancelledEvent(
             {
@@ -175,7 +167,7 @@ export class TableBookingEventStoreRepository
         }
         default:
           throw new Error(
-            `Event ${resolvedEvent.event.type} not supported by this repository`,
+            `Event ${resolvedEvent.type} not supported by this repository`,
           );
       }
     });

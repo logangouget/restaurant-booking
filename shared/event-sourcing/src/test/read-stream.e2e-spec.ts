@@ -86,9 +86,9 @@ describe('Read events from a stream', () => {
       const events = await lastValueFrom(source$.pipe(toArray()));
 
       expect(events.length).toBe(3);
-      expect(events[0].event.data).toEqual({ foo: 'bar', event: 1 });
-      expect(events[1].event.data).toEqual({ foo: 'bar', event: 2 });
-      expect(events[2].event.data).toEqual({ foo: 'bar', event: 3 });
+      expect(events[0].data).toEqual({ foo: 'bar', event: 1 });
+      expect(events[1].data).toEqual({ foo: 'bar', event: 2 });
+      expect(events[2].data).toEqual({ foo: 'bar', event: 3 });
     });
   });
 });

@@ -5,7 +5,7 @@ import { mockedConfigService } from '@/test/mocked-config-service';
 import { INestApplication } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Test, TestingModule } from '@nestjs/testing';
-import { EventStoreDbService } from '@rb/event-sourcing';
+import { EVENT_STORE_SERVICE, EventStoreService } from '@rb/event-sourcing';
 import {
   JSONMetadata,
   TableBookingInitiatedEvent,
@@ -21,7 +21,7 @@ import { v4 as uuid } from 'uuid';
 describe('Place table lock E2E - Table locking saga', () => {
   let testingModule: TestingModule;
   let app: INestApplication;
-  let eventStoreDbService: EventStoreDbService;
+  let eventStoreDbService: EventStoreService;
   let tableEventStoreRepository: TableEventStoreRepository;
 
   beforeAll(async () => {
@@ -35,7 +35,7 @@ describe('Place table lock E2E - Table locking saga', () => {
     app = testingModule.createNestApplication();
     await app.init();
 
-    eventStoreDbService = app.get<EventStoreDbService>(EventStoreDbService);
+    eventStoreDbService = app.get<EventStoreService>(EVENT_STORE_SERVICE);
     tableEventStoreRepository = app.get<TableEventStoreRepository>(
       TABLE_EVENT_STORE_REPOSITORY_INTERFACE,
     );

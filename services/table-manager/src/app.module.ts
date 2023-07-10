@@ -1,17 +1,20 @@
 import { AddTableModule } from '@/application/features/add-table/add-table.module';
 import { RemoveTableModule } from '@/application/features/remove-table/remove-table.module';
 import { TableLockingSaga } from '@/application/sagas/table-locking.saga';
-import { EventStoreDBClient } from '@eventstore/db-client';
 import {
   Inject,
   Module,
   OnApplicationBootstrap,
   OnModuleDestroy,
 } from '@nestjs/common';
-import { CqrsModule } from '@nestjs/cqrs';
-import { EVENT_STORE_DB_CLIENT, EventStoreModule } from '@rb/event-sourcing';
-import { PlaceTableLockModule } from './application/features/place-table-lock/place-table-lock.module';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { CqrsModule } from '@nestjs/cqrs';
+import {
+  EVENT_STORE_SERVICE,
+  EventStoreModule,
+  EventStoreService,
+} from '@rb/event-sourcing';
+import { PlaceTableLockModule } from './application/features/place-table-lock/place-table-lock.module';
 
 @Module({
   imports: [
@@ -36,16 +39,16 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 })
 export class AppModule implements OnModuleDestroy, OnApplicationBootstrap {
   constructor(
-    @Inject(EVENT_STORE_DB_CLIENT)
-    private readonly eventStoreClient: EventStoreDBClient,
+    @Inject(EVENT_STORE_SERVICE)
+    private readonly eventStoreService: EventStoreService,
     private readonly tableBookingSaga: TableLockingSaga,
   ) {}
 
-  async onModuleDestroy() {
-    await this.eventStoreClient.dispose();
-  }
-
   async onApplicationBootstrap() {
     await this.tableBookingSaga.init();
+  }
+
+  async onModuleDestroy() {
+    await this.eventStoreService.closeClient();
   }
 }

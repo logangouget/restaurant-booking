@@ -1,12 +1,15 @@
 import { InitiateTableBookingModule } from '@/application/features/initiate-table-booking/initiate-table-booking.module';
-import { EventStoreDBClient } from '@eventstore/db-client';
 import { Inject, Module, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { CqrsModule } from '@nestjs/cqrs';
-import { EVENT_STORE_DB_CLIENT, EventStoreModule } from '@rb/event-sourcing';
+import {
+  EVENT_STORE_SERVICE,
+  EventStoreModule,
+  EventStoreService,
+} from '@rb/event-sourcing';
+import { CancelTableBookingModule } from './application/features/cancel-table-booking/cancel-table-booking.module';
 import { ConfirmTableBookingModule } from './application/features/confirm-table-booking/confirm-table-booking.module';
 import { TableBookingSaga } from './application/sagas/table-booking.saga';
-import { CancelTableBookingModule } from './application/features/cancel-table-booking/cancel-table-booking.module';
 
 @Module({
   imports: [
@@ -31,8 +34,8 @@ import { CancelTableBookingModule } from './application/features/cancel-table-bo
 })
 export class AppModule implements OnModuleDestroy, OnModuleInit {
   constructor(
-    @Inject(EVENT_STORE_DB_CLIENT)
-    private readonly eventStoreClient: EventStoreDBClient,
+    @Inject(EVENT_STORE_SERVICE)
+    private readonly eventStoreService: EventStoreService,
     private readonly tableBookingSaga: TableBookingSaga,
   ) {}
 
@@ -41,6 +44,6 @@ export class AppModule implements OnModuleDestroy, OnModuleInit {
   }
 
   async onModuleDestroy() {
-    await this.eventStoreClient.dispose();
+    await this.eventStoreService.closeClient();
   }
 }

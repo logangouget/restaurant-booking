@@ -1,10 +1,7 @@
 import { Table } from '@/domain/table';
-import { Injectable } from '@nestjs/common';
-import {
-  EventStoreDbService,
-  JSONEventType,
-  ResolvedEvent,
-} from '@rb/event-sourcing';
+import { Inject, Injectable } from '@nestjs/common';
+import { EVENT_STORE_SERVICE, EventStoreService } from '@rb/event-sourcing';
+import { EventStoreEvent } from '@rb/event-sourcing/dist/store/event-store-event';
 import {
   Event,
   TableAddedEvent,
@@ -23,7 +20,10 @@ import { TableEventStoreRepositoryInterface } from './table.event-store.reposito
 export class TableEventStoreRepository
   implements TableEventStoreRepositoryInterface
 {
-  constructor(private readonly eventStoreDbService: EventStoreDbService) {}
+  constructor(
+    @Inject(EVENT_STORE_SERVICE)
+    private readonly eventStoreDbService: EventStoreService,
+  ) {}
 
   async findTableById(id: string): Promise<Table | null> {
     const streamName = TableBaseEvent.buildStreamName(id);
@@ -55,30 +55,26 @@ export class TableEventStoreRepository
     }
   }
 
-  private mapEventsFromJsonEvents(
-    resolvedEvents: ResolvedEvent<JSONEventType>[],
-  ) {
+  private mapEventsFromJsonEvents(resolvedEvents: EventStoreEvent[]) {
     return resolvedEvents.map((resolvedEvent) => {
-      switch (resolvedEvent.event.type as TableEventType) {
+      switch (resolvedEvent.type as TableEventType) {
         case 'table-added': {
-          const data = parseTableAddedEventData(resolvedEvent.event.data);
+          const data = parseTableAddedEventData(resolvedEvent.data);
 
           return new TableAddedEvent(data);
         }
         case 'table-removed': {
-          const data = parseTableRemovedEventData(resolvedEvent.event.data);
+          const data = parseTableRemovedEventData(resolvedEvent.data);
 
           return new TableRemovedEvent(data.id);
         }
         case 'table-lock-placed': {
-          const data = parseTableLockPlacedEventData(resolvedEvent.event.data);
+          const data = parseTableLockPlacedEventData(resolvedEvent.data);
 
           return new TableLockPlacedEvent(data);
         }
         default:
-          throw new Error(
-            `Event type ${resolvedEvent.event.type} not supported`,
-          );
+          throw new Error(`Event type ${resolvedEvent.type} not supported`);
       }
     });
   }
