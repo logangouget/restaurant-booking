@@ -70,7 +70,7 @@ describe('Cancel table booking - Table booking sage', () => {
     });
 
     it('should cancel the booking', async () => {
-      const { source$ } =
+      const source$ =
         await eventStoreDbService.initPersistentSubscriptionToStream(
           TableBookingBaseEvent.buildStreamName(tableId),
           `table-${tableId}-booking-confirmation`,
@@ -78,12 +78,12 @@ describe('Cancel table booking - Table booking sage', () => {
 
       const tableBookingCancelledEvent = await firstValueFrom(
         source$.pipe(
-          filter((event) => event.event.type === 'table-booking-cancelled'),
+          filter((event) => event.type === 'table-booking-cancelled'),
           take(1),
         ),
       );
 
-      expect(tableBookingCancelledEvent.event.data).toEqual({
+      expect(tableBookingCancelledEvent.data).toEqual({
         id: bookingId,
         tableId,
         timeSlot: {

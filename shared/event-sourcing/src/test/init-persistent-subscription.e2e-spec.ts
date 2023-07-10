@@ -10,6 +10,7 @@ import { defaultPersistentSubscriptionSettings } from './settings';
 import { deleteExistingPersistentSubscription } from './utils/delete-existing-persistent-subscription';
 import { deleteExistingStream } from './utils/delete-existing-stream';
 import { delay } from './utils/delay';
+import { AcknowledgeableEventStoreEvent } from 'src/store/acknowledgeable-event-store-event';
 
 describe('InitPersistentSubscription', () => {
   let testingModule: TestingModule;
@@ -18,7 +19,14 @@ describe('InitPersistentSubscription', () => {
 
   beforeAll(async () => {
     testingModule = await Test.createTestingModule({
-      imports: [EventStoreModule],
+      imports: [
+        EventStoreModule.registerAsync({
+          useFactory: () => ({
+            endpoint: 'localhost:2113',
+            insecure: true,
+          }),
+        }),
+      ],
     }).compile();
 
     eventStoreDbService =
@@ -127,7 +135,7 @@ describe('InitPersistentSubscription', () => {
       });
 
       it('should receive events', async () => {
-        const { source$ } =
+        const source$ =
           await eventStoreDbService.initPersistentSubscriptionToStream(
             testStreamName,
             testGroupName,
@@ -136,9 +144,9 @@ describe('InitPersistentSubscription', () => {
         const events = await lastValueFrom(source$.pipe(take(3), toArray()));
 
         expect(events).toHaveLength(3);
-        expect(events[0].event.data).toEqual({ foo: 'bar', event: 1 });
-        expect(events[1].event.data).toEqual({ foo: 'bar', event: 2 });
-        expect(events[2].event.data).toEqual({ foo: 'bar', event: 3 });
+        expect(events[0].data).toEqual({ foo: 'bar', event: 1 });
+        expect(events[1].data).toEqual({ foo: 'bar', event: 2 });
+        expect(events[2].data).toEqual({ foo: 'bar', event: 3 });
       });
     });
 
@@ -163,13 +171,13 @@ describe('InitPersistentSubscription', () => {
       });
 
       it('should receive events published after subscription', async () => {
-        const { source$ } =
+        const source$ =
           await eventStoreDbService.initPersistentSubscriptionToStream(
             testStreamName,
             testGroupName,
           );
 
-        const events = [];
+        const events = new Array<AcknowledgeableEventStoreEvent>();
 
         source$.subscribe((event) => {
           events.push(event);
@@ -184,9 +192,9 @@ describe('InitPersistentSubscription', () => {
         await delay(1000); // Wait for events to be received
 
         expect(events).toHaveLength(3);
-        expect(events[0].event.data).toEqual({ foo: 'bar', event: 1 });
-        expect(events[1].event.data).toEqual({ foo: 'bar', event: 2 });
-        expect(events[2].event.data).toEqual({ foo: 'bar', event: 3 });
+        expect(events[0].data).toEqual({ foo: 'bar', event: 1 });
+        expect(events[1].data).toEqual({ foo: 'bar', event: 2 });
+        expect(events[2].data).toEqual({ foo: 'bar', event: 3 });
       });
     });
   });

@@ -76,7 +76,7 @@ describe('Place table lock E2E - Table locking saga', () => {
       });
 
       it('should lock the table', async () => {
-        const { source$, subscription: subscription } =
+        const source$ =
           await eventStoreDbService.initPersistentSubscriptionToStream(
             TableBaseEvent.buildStreamName(tableId),
             `table-${tableId}-lock`,
@@ -84,15 +84,15 @@ describe('Place table lock E2E - Table locking saga', () => {
 
         const tableLockedPlacedEvent = await firstValueFrom(
           source$.pipe(
-            filter((event) => event.event.type === 'table-lock-placed'),
+            filter((event) => event.type === 'table-lock-placed'),
             map((event) => ({
               original: event,
-              data: parseTableLockPlacedEventData(event.event.data),
-              metadata: event.event.metadata as JSONMetadata,
+              data: parseTableLockPlacedEventData(event.data),
+              metadata: event.metadata as JSONMetadata,
             })),
             take(1),
             tap(async (event) => {
-              await subscription.ack(event.original);
+              await event.original.ack();
             }),
           ),
         );
@@ -134,7 +134,7 @@ describe('Place table lock E2E - Table locking saga', () => {
       });
 
       it('should not lock the table and emit a failure', async () => {
-        const { source$, subscription: subscription } =
+        const source$ =
           await eventStoreDbService.initPersistentSubscriptionToStream(
             TableLockPlacementFailedEvent.STREAM_NAME,
             `table_lock_placement_failed`,
@@ -144,13 +144,13 @@ describe('Place table lock E2E - Table locking saga', () => {
           source$.pipe(
             map((event) => ({
               original: event,
-              data: parseTableLockPlacementFailedEventData(event.event.data),
-              metadata: event.event.metadata as JSONMetadata,
+              data: parseTableLockPlacementFailedEventData(event.data),
+              metadata: event.metadata as JSONMetadata,
             })),
             filter((event) => event.data.tableId === tableId),
             take(1),
             tap(async (event) => {
-              await subscription.ack(event.original);
+              await event.original.ack();
             }),
           ),
         );

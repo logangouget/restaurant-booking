@@ -19,7 +19,14 @@ describe('Read events from a stream', () => {
 
   beforeAll(async () => {
     testingModule = await Test.createTestingModule({
-      imports: [EventStoreModule],
+      imports: [
+        EventStoreModule.registerAsync({
+          useFactory: () => ({
+            endpoint: 'localhost:2113',
+            insecure: true,
+          }),
+        }),
+      ],
     }).compile();
 
     eventStoreDbService =
