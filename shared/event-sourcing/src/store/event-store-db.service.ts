@@ -1,11 +1,8 @@
 import {
   EventStoreDBClient,
-  EventType,
   jsonEvent,
   JSONEventType,
   JSONType,
-  PersistentSubscriptionToStream,
-  PersistentSubscriptionToStreamResolvedEvent,
   ReadStreamOptions,
   ResolvedEvent,
   StreamNotFoundError,
@@ -13,6 +10,7 @@ import {
 import { Inject, Injectable } from '@nestjs/common';
 import { Event } from '@rb/events';
 import { firstValueFrom, Observable } from 'rxjs';
+import { AcknowledgeableEventStoreEvent } from './acknowledgeable-event-store-event';
 
 export const EVENT_STORE_DB_CLIENT = 'EVENT_STORE_DB_CLIENT';
 
@@ -74,12 +72,7 @@ export class EventStoreDbService {
   async initPersistentSubscriptionToStream(
     streamName: string,
     groupName: string,
-  ): Promise<{
-    source$: Observable<
-      PersistentSubscriptionToStreamResolvedEvent<JSONEventType>
-    >;
-    subscription: PersistentSubscriptionToStream<EventType>;
-  }> {
+  ): Promise<Observable<AcknowledgeableEventStoreEvent>> {
     const currentSubscriptions =
       await this.client.listAllPersistentSubscriptions();
 
@@ -115,30 +108,41 @@ export class EventStoreDbService {
         groupName,
       );
 
-    const observable = new Observable<
-      PersistentSubscriptionToStreamResolvedEvent<JSONEventType>
-    >((subscriber) => {
-      persistentSubscription.on('data', (event) => {
-        subscriber.next(event);
-      });
+    const observable = new Observable<AcknowledgeableEventStoreEvent>(
+      (subscriber) => {
+        persistentSubscription.on('data', (event) => {
+          subscriber.next(
+            new AcknowledgeableEventStoreEvent(
+              {
+                type: event.event?.type,
+                data: event.event?.data,
+                metadata: event.event?.metadata,
+                retryCount: event.retryCount,
+              },
+              {
+                ack: () => persistentSubscription.ack(event),
+                nack: (action, message) =>
+                  persistentSubscription.nack(action, message, event),
+              },
+            ),
+          );
+        });
 
-      persistentSubscription.on('error', (error) => {
-        subscriber.error(error);
-      });
+        persistentSubscription.on('error', (error) => {
+          subscriber.error(error);
+        });
 
-      persistentSubscription.on('end', () => {
-        subscriber.complete();
-      });
+        persistentSubscription.on('end', () => {
+          subscriber.complete();
+        });
 
-      return () => {
-        persistentSubscription.destroy();
-      };
-    });
+        return () => {
+          persistentSubscription.destroy();
+        };
+      },
+    );
 
-    return {
-      source$: observable,
-      subscription: persistentSubscription,
-    };
+    return observable;
   }
 
   private mapEventToJsonEvent<T, X>(event: Event<T, X>) {

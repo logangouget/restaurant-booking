@@ -70,7 +70,7 @@ describe('Confirm booking E2E - Table booking saga', () => {
     });
 
     it('should confirm the booking', async () => {
-      const { source$ } =
+      const source$ =
         await eventStoreDbService.initPersistentSubscriptionToStream(
           TableBookingBaseEvent.buildStreamName(tableId),
           `table-${tableId}-booking-confirmation`,
@@ -78,12 +78,12 @@ describe('Confirm booking E2E - Table booking saga', () => {
 
       const tableBookingConfirmedEvent = await firstValueFrom(
         source$.pipe(
-          filter((event) => event.event.type === 'table-booking-confirmed'),
+          filter((event) => event.type === 'table-booking-confirmed'),
           take(1),
         ),
       );
 
-      expect(tableBookingConfirmedEvent.event.data).toMatchObject({
+      expect(tableBookingConfirmedEvent.data).toMatchObject({
         id: bookingId,
         tableId: tableId,
         timeSlot: {

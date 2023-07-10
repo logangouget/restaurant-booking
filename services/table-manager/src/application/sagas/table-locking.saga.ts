@@ -1,15 +1,11 @@
-import {
-  EventType,
-  PersistentSubscriptionToStream,
-  PersistentSubscriptionToStreamResolvedEvent,
-} from '@eventstore/db-client';
 import { Injectable } from '@nestjs/common';
-import { CommandBus } from '@nestjs/cqrs';
-import { EventStoreDbService, JSONType } from '@rb/event-sourcing';
-import { JSONMetadata, parseTableBookingInitiatedEventData } from '@rb/events';
-import { PlaceTableLockCommand } from '../features/place-table-lock/place-table-lock.command';
 import { ConfigService } from '@nestjs/config';
+import { CommandBus } from '@nestjs/cqrs';
+import { EventStoreDbService } from '@rb/event-sourcing';
+import { AcknowledgeableEventStoreEvent } from '@rb/event-sourcing/dist/store/acknowledgeable-event-store-event';
+import { JSONMetadata, parseTableBookingInitiatedEventData } from '@rb/events';
 import { TableNotFoundError } from '../errors';
+import { PlaceTableLockCommand } from '../features/place-table-lock/place-table-lock.command';
 
 @Injectable()
 export class TableLockingSaga {
@@ -26,30 +22,21 @@ export class TableLockingSaga {
       'TABLE_LOCKING_SAGA_GROUP_NAME',
     );
 
-    const { source$, subscription: subscription } =
+    const source$ =
       await this.eventStoreDbService.initPersistentSubscriptionToStream(
         streamName,
         groupName,
       );
 
     source$.subscribe((resolvedEvent) => {
-      this.onTableBookingInitiated(resolvedEvent, subscription);
+      this.onTableBookingInitiated(resolvedEvent);
     });
   }
 
-  async onTableBookingInitiated(
-    resolvedEvent: PersistentSubscriptionToStreamResolvedEvent<{
-      type: string;
-      data: JSONType;
-      metadata?: unknown;
-    }>,
-    subscription: PersistentSubscriptionToStream<EventType>,
-  ) {
-    const eventData = parseTableBookingInitiatedEventData(
-      resolvedEvent.event.data,
-    );
+  async onTableBookingInitiated(resolvedEvent: AcknowledgeableEventStoreEvent) {
+    const eventData = parseTableBookingInitiatedEventData(resolvedEvent.data);
 
-    const eventMetadata = resolvedEvent.event.metadata as JSONMetadata;
+    const eventMetadata = resolvedEvent.metadata as JSONMetadata;
 
     const command = new PlaceTableLockCommand(
       eventData.tableId,
@@ -64,12 +51,12 @@ export class TableLockingSaga {
       await this.commandBus.execute(command);
     } catch (error) {
       if (error instanceof TableNotFoundError) {
-        await subscription.ack(resolvedEvent);
+        await resolvedEvent.ack();
         return;
       }
       throw error;
     }
 
-    await subscription.ack(resolvedEvent);
+    await resolvedEvent.ack();
   }
 }
