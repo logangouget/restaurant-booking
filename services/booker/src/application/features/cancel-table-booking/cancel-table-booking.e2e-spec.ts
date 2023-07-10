@@ -3,7 +3,7 @@ import { mockedConfigService } from '@/test/mocked-config-service';
 import { INestApplication } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Test, TestingModule } from '@nestjs/testing';
-import { EventStoreDbService } from '@rb/event-sourcing';
+import { EVENT_STORE_SERVICE, EventStoreService } from '@rb/event-sourcing';
 import {
   TableBookingInitiatedEvent,
   TableLockPlacementFailedEvent,
@@ -15,7 +15,7 @@ import { v4 as uuid } from 'uuid';
 describe('Cancel table booking - Table booking sage', () => {
   let testingModule: TestingModule;
   let app: INestApplication;
-  let eventStoreDbService: EventStoreDbService;
+  let eventStoreDbService: EventStoreService;
 
   beforeAll(async () => {
     testingModule = await Test.createTestingModule({
@@ -28,7 +28,7 @@ describe('Cancel table booking - Table booking sage', () => {
     app = testingModule.createNestApplication();
     await app.init();
 
-    eventStoreDbService = app.get<EventStoreDbService>(EventStoreDbService);
+    eventStoreDbService = app.get<EventStoreService>(EVENT_STORE_SERVICE);
   });
 
   afterAll(async () => {

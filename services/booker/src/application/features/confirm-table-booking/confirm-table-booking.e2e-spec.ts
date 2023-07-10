@@ -3,7 +3,7 @@ import { mockedConfigService } from '@/test/mocked-config-service';
 import { INestApplication } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Test, TestingModule } from '@nestjs/testing';
-import { EventStoreDbService } from '@rb/event-sourcing';
+import { EVENT_STORE_SERVICE, EventStoreService } from '@rb/event-sourcing';
 import { TableBookingInitiatedEvent, TableLockPlacedEvent } from '@rb/events';
 import { TableBookingBaseEvent } from '@rb/events/dist/table-booking/table-booking-base-event';
 import { filter, firstValueFrom, take } from 'rxjs';
@@ -12,7 +12,7 @@ import { v4 as uuid } from 'uuid';
 describe('Confirm booking E2E - Table booking saga', () => {
   let testingModule: TestingModule;
   let app: INestApplication;
-  let eventStoreDbService: EventStoreDbService;
+  let eventStoreDbService: EventStoreService;
 
   beforeAll(async () => {
     testingModule = await Test.createTestingModule({
@@ -25,7 +25,7 @@ describe('Confirm booking E2E - Table booking saga', () => {
     app = testingModule.createNestApplication();
     await app.init();
 
-    eventStoreDbService = app.get<EventStoreDbService>(EventStoreDbService);
+    eventStoreDbService = app.get<EventStoreService>(EVENT_STORE_SERVICE);
   });
 
   afterAll(async () => {

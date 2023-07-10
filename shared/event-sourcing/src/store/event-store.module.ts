@@ -10,12 +10,16 @@ import {
   MODULE_OPTIONS_TOKEN,
 } from './event-store.module-definition';
 import { EventStoreDBClient } from '@eventstore/db-client';
+import { EVENT_STORE_SERVICE } from './event-store.service';
 
 @Global()
 @Module({
   imports: [ConfigModule],
   providers: [
-    EventStoreDbService,
+    {
+      provide: EVENT_STORE_SERVICE,
+      useClass: EventStoreDbService,
+    },
     {
       provide: EVENT_STORE_DB_CLIENT,
       useFactory(options: EventStoreModuleOptions) {
@@ -31,6 +35,6 @@ import { EventStoreDBClient } from '@eventstore/db-client';
       inject: [MODULE_OPTIONS_TOKEN],
     },
   ],
-  exports: [EventStoreDbService, EVENT_STORE_DB_CLIENT],
+  exports: [EVENT_STORE_SERVICE],
 })
 export class EventStoreModule extends ConfigurableModuleClass {}

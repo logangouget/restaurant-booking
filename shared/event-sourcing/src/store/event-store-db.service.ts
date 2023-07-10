@@ -1,21 +1,20 @@
 import {
   EventStoreDBClient,
   jsonEvent,
-  JSONEventType,
   JSONType,
-  ReadStreamOptions,
-  ResolvedEvent,
   StreamNotFoundError,
 } from '@eventstore/db-client';
 import { Inject, Injectable } from '@nestjs/common';
 import { Event } from '@rb/events';
 import { firstValueFrom, Observable } from 'rxjs';
 import { AcknowledgeableEventStoreEvent } from './acknowledgeable-event-store-event';
+import { EventStoreEvent } from './event-store-event';
+import { EventStoreService } from './event-store.service';
 
 export const EVENT_STORE_DB_CLIENT = 'EVENT_STORE_DB_CLIENT';
 
 @Injectable()
-export class EventStoreDbService {
+export class EventStoreDbService implements EventStoreService {
   constructor(
     @Inject(EVENT_STORE_DB_CLIENT)
     private readonly client: EventStoreDBClient,
@@ -29,29 +28,35 @@ export class EventStoreDbService {
 
   readStream(
     streamName: string,
-    options?: ReadStreamOptions,
-  ): Observable<ResolvedEvent<JSONEventType>> {
+    options?: {
+      maxCount?: number;
+    },
+  ): Observable<EventStoreEvent> {
     const stream = this.client.readStream(streamName, options);
 
-    const observable = new Observable<ResolvedEvent<JSONEventType>>(
-      (subscriber) => {
-        stream.on('data', (event) => {
-          subscriber.next(event);
-        });
+    const observable = new Observable<EventStoreEvent>((subscriber) => {
+      stream.on('data', (event) => {
+        subscriber.next(
+          new EventStoreEvent({
+            data: event.event?.data,
+            metadata: event.event?.metadata,
+            type: event.event?.type,
+          }),
+        );
+      });
 
-        stream.on('error', (error) => {
-          subscriber.error(error);
-        });
+      stream.on('error', (error) => {
+        subscriber.error(error);
+      });
 
-        stream.on('end', () => {
-          subscriber.complete();
-        });
+      stream.on('end', () => {
+        subscriber.complete();
+      });
 
-        return () => {
-          stream.cancel();
-        };
-      },
-    );
+      return () => {
+        stream.cancel();
+      };
+    });
 
     return observable;
   }
@@ -156,5 +161,9 @@ export class EventStoreDbService {
         ...metadata,
       },
     });
+  }
+
+  async closeClient() {
+    return this.client.dispose();
   }
 }

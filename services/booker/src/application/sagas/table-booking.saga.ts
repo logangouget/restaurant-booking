@@ -1,7 +1,7 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { CommandBus } from '@nestjs/cqrs';
-import { EventStoreDbService } from '@rb/event-sourcing';
+import { EVENT_STORE_SERVICE, EventStoreService } from '@rb/event-sourcing';
 import { AcknowledgeableEventStoreEvent } from '@rb/event-sourcing/dist/store/acknowledgeable-event-store-event';
 import {
   JSONMetadata,
@@ -14,7 +14,8 @@ import { ConfirmTableBookingCommand } from '../features/confirm-table-booking/co
 @Injectable()
 export class TableBookingSaga {
   constructor(
-    private readonly eventStoreDbService: EventStoreDbService,
+    @Inject(EVENT_STORE_SERVICE)
+    private readonly eventStoreDbService: EventStoreService,
     private readonly commandBus: CommandBus,
     private readonly configService: ConfigService,
   ) {}
