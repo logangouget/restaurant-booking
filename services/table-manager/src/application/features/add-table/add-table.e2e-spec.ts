@@ -1,4 +1,5 @@
 import { AppModule } from '@/app.module';
+import { clearSagaSubscriptions } from '@/test/clear-saga-subscriptions';
 import { mockedConfigService } from '@/test/mocked-config-service';
 import { INestApplication } from '@nestjs/common/interfaces';
 import { ConfigService } from '@nestjs/config';
@@ -19,6 +20,9 @@ describe('Add table E2E - /tables (POST)', () => {
       .compile();
 
     app = testingModule.createNestApplication();
+
+    await clearSagaSubscriptions(app);
+
     await app.init();
   });
 

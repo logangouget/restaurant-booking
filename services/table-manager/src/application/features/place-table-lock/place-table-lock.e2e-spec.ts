@@ -1,6 +1,7 @@
 import { AppModule } from '@/app.module';
 import { TableEventStoreRepository } from '@/infrastructure/repository/table.event-store.repository';
 import { TABLE_EVENT_STORE_REPOSITORY_INTERFACE } from '@/infrastructure/repository/table.event-store.repository.interface';
+import { clearSagaSubscriptions } from '@/test/clear-saga-subscriptions';
 import { mockedConfigService } from '@/test/mocked-config-service';
 import { INestApplication } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
@@ -33,6 +34,9 @@ describe('Place table lock E2E - Table locking saga', () => {
       .compile();
 
     app = testingModule.createNestApplication();
+
+    await clearSagaSubscriptions(app);
+
     await app.init();
 
     eventStoreDbService = app.get<EventStoreService>(EVENT_STORE_SERVICE);
@@ -42,7 +46,6 @@ describe('Place table lock E2E - Table locking saga', () => {
   });
 
   afterAll(async () => {
-    await app.close();
     await testingModule.close();
   });
 
@@ -84,6 +87,9 @@ describe('Place table lock E2E - Table locking saga', () => {
 
         const tableLockedPlacedEvent = await firstValueFrom(
           source$.pipe(
+            tap(async (event) => {
+              await event.ack();
+            }),
             filter((event) => event.type === 'table-lock-placed'),
             map((event) => ({
               original: event,
@@ -91,9 +97,6 @@ describe('Place table lock E2E - Table locking saga', () => {
               metadata: event.metadata as JSONMetadata,
             })),
             take(1),
-            tap(async (event) => {
-              await event.original.ack();
-            }),
           ),
         );
 

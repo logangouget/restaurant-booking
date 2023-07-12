@@ -24,7 +24,7 @@ export class TableBookingSaga {
     const tableLockPlacedStreamName = '$et-table-lock-placed';
 
     const tableLockPlacedGroupName = this.configService.get<string>(
-      'TABLE_BOOKING_SAGA_GROUP_NAME',
+      'TABLE_BOOKING_SAGA_LOCK_PLACED_GROUP_NAME',
     );
 
     const tableLockedSource$ =
@@ -41,7 +41,7 @@ export class TableBookingSaga {
       '$et-table-lock-placement-failed';
 
     const tableLockPlacementFailedGroupName = this.configService.get<string>(
-      'TABLE_BOOKING_SAGA_GROUP_NAME',
+      'TABLE_BOOKING_SAGA_LOCK_PLACEMENT_FAILED_GROUP_NAME',
     );
 
     const tableLockPlacementFailedSource$ =

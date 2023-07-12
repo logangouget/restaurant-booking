@@ -142,7 +142,7 @@ export class EventStoreDbService implements EventStoreService {
         });
 
         return () => {
-          persistentSubscription.destroy();
+          persistentSubscription.unsubscribe();
         };
       },
     );

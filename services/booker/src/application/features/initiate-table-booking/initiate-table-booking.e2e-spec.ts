@@ -4,6 +4,7 @@ import { INestApplication } from '@nestjs/common/interfaces';
 import { ConfigService } from '@nestjs/config';
 import { Test, TestingModule } from '@nestjs/testing';
 import * as request from 'supertest';
+import { clearSagaSubscriptions } from '@/test/clear-saga-subscriptions';
 import { v4 as uuidv4 } from 'uuid';
 
 describe('Book table E2E - /bookings/initiate (POST)', () => {
@@ -19,6 +20,8 @@ describe('Book table E2E - /bookings/initiate (POST)', () => {
       .compile();
 
     app = testingModule.createNestApplication();
+
+    await clearSagaSubscriptions(app);
 
     await app.init();
   });
