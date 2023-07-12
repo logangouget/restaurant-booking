@@ -1,10 +1,11 @@
+import { AppModule } from '@/app.module';
+import { clearSagaSubscriptions } from '@/test/clear-saga-subscriptions';
+import { mockedConfigService } from '@/test/mocked-config-service';
 import { INestApplication } from '@nestjs/common/interfaces';
+import { ConfigService } from '@nestjs/config';
 import { Test, TestingModule } from '@nestjs/testing';
 import * as request from 'supertest';
 import { v4 as uuidv4 } from 'uuid';
-import { AppModule } from '@/app.module';
-import { ConfigService } from '@nestjs/config';
-import { mockedConfigService } from '@/test/mocked-config-service';
 
 describe('Add table E2E - /tables (DELETE)', () => {
   let testingModule: TestingModule;
@@ -19,6 +20,9 @@ describe('Add table E2E - /tables (DELETE)', () => {
       .compile();
 
     app = testingModule.createNestApplication();
+
+    await clearSagaSubscriptions(app);
+
     await app.init();
   });
 

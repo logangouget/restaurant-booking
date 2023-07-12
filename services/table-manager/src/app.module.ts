@@ -45,7 +45,12 @@ export class AppModule implements OnModuleDestroy, OnApplicationBootstrap {
   ) {}
 
   async onApplicationBootstrap() {
-    await this.tableBookingSaga.init();
+    try {
+      await this.tableBookingSaga.init();
+    } catch (error) {
+      console.error(error);
+      throw error;
+    }
   }
 
   async onModuleDestroy() {

@@ -7,6 +7,7 @@ import { EVENT_STORE_SERVICE, EventStoreService } from '@rb/event-sourcing';
 import { TableBookingInitiatedEvent, TableLockPlacedEvent } from '@rb/events';
 import { TableBookingBaseEvent } from '@rb/events/dist/table-booking/table-booking-base-event';
 import { filter, firstValueFrom, take } from 'rxjs';
+import { clearSagaSubscriptions } from '@/test/clear-saga-subscriptions';
 import { v4 as uuid } from 'uuid';
 
 describe('Confirm booking E2E - Table booking saga', () => {
@@ -23,6 +24,9 @@ describe('Confirm booking E2E - Table booking saga', () => {
       .compile();
 
     app = testingModule.createNestApplication();
+
+    await clearSagaSubscriptions(app);
+
     await app.init();
 
     eventStoreDbService = app.get<EventStoreService>(EVENT_STORE_SERVICE);
