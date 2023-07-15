@@ -2,7 +2,7 @@ import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
 import {
   TABLE_EVENT_STORE_REPOSITORY_INTERFACE,
   TableEventStoreRepositoryInterface,
-} from '@/infrastructure/repository/table.event-store.repository.interface';
+} from '@/infrastructure/repository/event-store/table.event-store.repository.interface';
 import { PlaceTableLockCommand } from './place-table-lock.command';
 import { Inject } from '@nestjs/common';
 import { Table } from '@/domain/table';

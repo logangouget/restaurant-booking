@@ -3,6 +3,7 @@ import { RemoveTableModule } from '@/application/features/remove-table/remove-ta
 import { TableLockingSaga } from '@/application/sagas/table-locking.saga';
 import {
   Inject,
+  Logger,
   Module,
   OnApplicationBootstrap,
   OnModuleDestroy,
@@ -14,7 +15,14 @@ import {
   EventStoreModule,
   EventStoreService,
 } from '@rb/event-sourcing';
+import { ListTablesModule } from './application/features/list-tables/list-tables.module';
 import { PlaceTableLockModule } from './application/features/place-table-lock/place-table-lock.module';
+import { TableProjection } from './application/projections/table.projection';
+import {
+  DB_CONNECTION,
+  DatabaseModule,
+  DbConnectionType,
+} from './infrastructure/repository/database/database.module';
 
 @Module({
   imports: [
@@ -31,29 +39,38 @@ import { PlaceTableLockModule } from './application/features/place-table-lock/pl
         };
       },
     }),
+    DatabaseModule,
     AddTableModule,
     RemoveTableModule,
     PlaceTableLockModule,
+    ListTablesModule,
   ],
-  providers: [TableLockingSaga],
+  providers: [TableLockingSaga, TableProjection],
 })
 export class AppModule implements OnModuleDestroy, OnApplicationBootstrap {
   constructor(
     @Inject(EVENT_STORE_SERVICE)
     private readonly eventStoreService: EventStoreService,
+    @Inject(DB_CONNECTION)
+    private readonly dbConnection: DbConnectionType,
     private readonly tableBookingSaga: TableLockingSaga,
+    private readonly tableProjection: TableProjection,
   ) {}
 
   async onApplicationBootstrap() {
+    const logger = new Logger('Bootstrap');
+
     try {
       await this.tableBookingSaga.init();
+      await this.tableProjection.init();
     } catch (error) {
-      console.error(error);
+      logger.error(error);
       throw error;
     }
   }
 
   async onModuleDestroy() {
     await this.eventStoreService.closeClient();
+    await this.dbConnection.end();
   }
 }

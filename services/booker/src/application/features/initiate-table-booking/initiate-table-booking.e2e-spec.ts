@@ -32,13 +32,13 @@ describe('Book table E2E - /bookings/initiate (POST)', () => {
   });
 
   describe('Initiate booking', () => {
-    const tableName = uuidv4();
+    const tableId = uuidv4();
 
     it('should book a table', async () => {
       await request(app.getHttpServer())
         .post('/booking/initiate')
         .send({
-          tableId: tableName,
+          tableId: tableId,
           timeSlot: {
             from: new Date(),
             to: new Date(),
@@ -49,7 +49,7 @@ describe('Book table E2E - /bookings/initiate (POST)', () => {
   });
 
   describe('Initiate a table booking for a table that is already booked', () => {
-    const tableName = uuidv4();
+    const tableId = uuidv4();
 
     const timeSlot = {
       from: new Date(),
@@ -60,7 +60,7 @@ describe('Book table E2E - /bookings/initiate (POST)', () => {
       await request(app.getHttpServer())
         .post('/booking/initiate')
         .send({
-          tableId: tableName,
+          tableId: tableId,
           timeSlot,
         })
         .expect(201);
@@ -70,7 +70,7 @@ describe('Book table E2E - /bookings/initiate (POST)', () => {
       await request(app.getHttpServer())
         .post('/booking/initiate')
         .send({
-          tableId: tableName,
+          tableId: tableId,
           timeSlot,
         })
         .expect(409);

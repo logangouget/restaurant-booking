@@ -6,7 +6,7 @@ import { Table } from '@/domain/table';
 import {
   TABLE_EVENT_STORE_REPOSITORY_INTERFACE,
   TableEventStoreRepositoryInterface,
-} from '@/infrastructure/repository/table.event-store.repository.interface';
+} from '@/infrastructure/repository/event-store/table.event-store.repository.interface';
 import { TableAlreadyExistsError } from './errors';
 
 const feature = loadFeature('./add-table.feature', {

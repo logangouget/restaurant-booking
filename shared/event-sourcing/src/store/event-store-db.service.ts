@@ -94,7 +94,7 @@ export class EventStoreDbService implements EventStoreService {
           checkPointLowerBound: 10,
           checkPointUpperBound: 1000,
           consumerStrategyName: 'RoundRobin',
-          extraStatistics: false,
+          extraStatistics: true,
           historyBufferSize: 500,
           liveBufferSize: 500,
           maxRetryCount: 10,
@@ -123,6 +123,8 @@ export class EventStoreDbService implements EventStoreService {
                 data: event.event?.data,
                 metadata: event.event?.metadata,
                 retryCount: event.retryCount,
+                revision: Number(event.event.revision),
+                createdAt: event.event?.created,
               },
               {
                 ack: () => persistentSubscription.ack(event),

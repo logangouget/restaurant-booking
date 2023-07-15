@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { CommandBus } from '@nestjs/cqrs';
 import { EVENT_STORE_SERVICE, EventStoreService } from '@rb/event-sourcing';
@@ -17,6 +17,10 @@ export class TableLockingSaga {
   ) {}
 
   async init() {
+    const logger = new Logger('TableLockingSaga');
+
+    logger.debug('Initializing TableLockingSaga');
+
     const streamName = '$et-table-booking-initiated';
 
     const groupName = this.configService.get<string>(
@@ -29,8 +33,12 @@ export class TableLockingSaga {
         groupName,
       );
 
-    source$.subscribe((resolvedEvent) => {
-      this.onTableBookingInitiated(resolvedEvent);
+    source$.subscribe(async (resolvedEvent) => {
+      try {
+        await this.onTableBookingInitiated(resolvedEvent);
+      } catch (error) {
+        logger.error(error);
+      }
     });
   }
 

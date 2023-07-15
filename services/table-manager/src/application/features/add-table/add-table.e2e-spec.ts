@@ -1,9 +1,6 @@
-import { AppModule } from '@/app.module';
-import { clearSagaSubscriptions } from '@/test/clear-saga-subscriptions';
-import { mockedConfigService } from '@/test/mocked-config-service';
+import { setupTestingModule } from '@/test/setup-testing-module';
 import { INestApplication } from '@nestjs/common/interfaces';
-import { ConfigService } from '@nestjs/config';
-import { Test, TestingModule } from '@nestjs/testing';
+import { TestingModule } from '@nestjs/testing';
 import * as request from 'supertest';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -11,76 +8,64 @@ describe('Add table E2E - /tables (POST)', () => {
   let testingModule: TestingModule;
   let app: INestApplication;
 
-  beforeAll(async () => {
-    testingModule = await Test.createTestingModule({
-      imports: [AppModule],
-    })
-      .overrideProvider(ConfigService)
-      .useValue(mockedConfigService)
-      .compile();
-
-    app = testingModule.createNestApplication();
-
-    await clearSagaSubscriptions(app);
-
-    await app.init();
+  beforeEach(async () => {
+    ({ testingModule, app } = await setupTestingModule());
   });
 
-  afterAll(async () => {
-    await app.close();
+  afterEach(async () => {
     await testingModule.close();
   });
 
   describe('Validation errors', () => {
-    it('should send a 400 status code when table name property is missing', async () => {
+    it('should send a 400 status code when table id property is missing', async () => {
       await request(app.getHttpServer())
         .post('/tables')
-        .send({ numberOfSeats: 4 })
+        .send({ seats: 4 })
         .expect(400);
     });
 
-    it('should send a 400 status code when table name is empty', async () => {
+    it('should send a 400 status code when table id is empty', async () => {
       await request(app.getHttpServer())
         .post('/tables')
-        .send({ name: '', numberOfSeats: 4 })
+        .send({ id: '', seats: 4 })
         .expect(400);
     });
 
-    it('should send a 400 status code when numberOfSeats property is missing', async () => {
+    it('should send a 400 status code when seats property is missing', async () => {
       await request(app.getHttpServer())
         .post('/tables')
-        .send({ name: '' })
+        .send({ id: '' })
         .expect(400);
     });
   });
 
   describe('Adding a table', () => {
-    const tableName = uuidv4();
+    const tableId = uuidv4();
 
     it('should add a table', async () => {
       const response = await request(app.getHttpServer())
         .post('/tables')
-        .send({ name: tableName, numberOfSeats: 4 })
+        .send({ id: tableId, seats: 4 })
         .expect(201);
 
-      expect(response.body).toEqual({ id: tableName });
+      expect(response.body).toEqual({ id: tableId });
     });
   });
 
   describe('Adding a table that already exists', () => {
-    const tableName = uuidv4();
+    const tableId = uuidv4();
 
     beforeEach(async () => {
       await request(app.getHttpServer())
         .post('/tables')
-        .send({ name: tableName, numberOfSeats: 4 })
+        .send({ id: tableId, seats: 4 })
         .expect(201);
     });
 
     it('/tables (POST)', async () => {
       await request(app.getHttpServer())
         .post('/tables')
-        .send({ name: tableName, numberOfSeats: 4 })
+        .send({ id: tableId, seats: 4 })
         .expect(409);
     });
   });

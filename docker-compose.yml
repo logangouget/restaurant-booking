@@ -17,3 +17,25 @@ services:
       - EVENTSTORE_START_STANDARD_PROJECTIONS=true
     volumes:
       - ./data:/data
+      
+  postgres:
+    image: postgres:latest
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=admin
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=restaurant-booking
+
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    ports:
+      - "8080:80"
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=admin@rb.com
+      - PGADMIN_DEFAULT_PASSWORD=password
+    volumes:
+      - pgadmin_config:/var/lib/pgadmin
+
+volumes:
+  pgadmin_config:
