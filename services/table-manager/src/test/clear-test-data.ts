@@ -4,7 +4,9 @@ import { clearSagaSubscriptions } from './clear-saga-subscriptions';
 import { clearProjections } from './clear-projections';
 
 export const clearTestData = async (app: INestApplication) => {
-  await clearDatabase(app);
-  await clearSagaSubscriptions(app);
-  await clearProjections(app);
+  await Promise.all([
+    clearDatabase(app),
+    clearSagaSubscriptions(app),
+    clearProjections(app),
+  ]);
 };

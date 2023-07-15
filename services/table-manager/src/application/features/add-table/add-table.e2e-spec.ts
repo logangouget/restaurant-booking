@@ -12,7 +12,7 @@ describe('Add table E2E - /tables (POST)', () => {
     ({ testingModule, app } = await setupTestingModule());
   });
 
-  afterEach(async () => {
+  afterAll(async () => {
     await testingModule.close();
   });
 

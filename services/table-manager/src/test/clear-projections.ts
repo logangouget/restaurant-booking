@@ -8,7 +8,6 @@ import {
 
 export const clearProjections = async (app: INestApplication) => {
   const eventStoreService = app.get<EventStoreService>(EVENT_STORE_SERVICE);
-
   const configService = app.get<ConfigService>(ConfigService);
 
   await ackAllPersistentSubscriptionEvents(eventStoreService, {

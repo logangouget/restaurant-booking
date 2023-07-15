@@ -14,7 +14,7 @@ describe('List tables E2E - /tables (GET)', () => {
     ({ testingModule, app } = await setupTestingModule());
   });
 
-  afterEach(async () => {
+  afterAll(async () => {
     await testingModule.close();
   });
 
