@@ -35,7 +35,7 @@ export class AddTableController {
   })
   @Post('tables')
   async addTable(@Body() body: AddTableRequest): Promise<AddTableResponse> {
-    const command = new AddTableCommand(body.name, body.numberOfSeats);
+    const command = new AddTableCommand(body.id, body.seats);
 
     try {
       const table = await this.commandBus.execute<AddTableCommand, Table>(

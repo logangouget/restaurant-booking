@@ -3,7 +3,7 @@ import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
 import {
   TABLE_EVENT_STORE_REPOSITORY_INTERFACE,
   TableEventStoreRepositoryInterface,
-} from '@/infrastructure/repository/table.event-store.repository.interface';
+} from '@/infrastructure/repository/event-store/table.event-store.repository.interface';
 import { RemoveTableCommand } from './remove-table.command';
 import { TableNotFoundError } from '@/application/errors';
 

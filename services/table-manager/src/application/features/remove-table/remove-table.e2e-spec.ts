@@ -1,33 +1,18 @@
-import { AppModule } from '@/app.module';
-import { clearSagaSubscriptions } from '@/test/clear-saga-subscriptions';
-import { mockedConfigService } from '@/test/mocked-config-service';
+import { setupTestingModule } from '@/test/setup-testing-module';
 import { INestApplication } from '@nestjs/common/interfaces';
-import { ConfigService } from '@nestjs/config';
-import { Test, TestingModule } from '@nestjs/testing';
+import { TestingModule } from '@nestjs/testing';
 import * as request from 'supertest';
 import { v4 as uuidv4 } from 'uuid';
 
-describe('Add table E2E - /tables (DELETE)', () => {
+describe('Remove table E2E - /tables (DELETE)', () => {
   let testingModule: TestingModule;
   let app: INestApplication;
 
-  beforeAll(async () => {
-    testingModule = await Test.createTestingModule({
-      imports: [AppModule],
-    })
-      .overrideProvider(ConfigService)
-      .useValue(mockedConfigService)
-      .compile();
-
-    app = testingModule.createNestApplication();
-
-    await clearSagaSubscriptions(app);
-
-    await app.init();
+  beforeEach(async () => {
+    ({ testingModule, app } = await setupTestingModule());
   });
 
-  afterAll(async () => {
-    await app.close();
+  afterEach(async () => {
     await testingModule.close();
   });
 
@@ -38,18 +23,18 @@ describe('Add table E2E - /tables (DELETE)', () => {
   });
 
   describe('Removing a table', () => {
-    const tableName = uuidv4();
+    const tableId = uuidv4();
 
     beforeEach(async () => {
       await request(app.getHttpServer())
         .post('/tables')
-        .send({ name: tableName, numberOfSeats: 4 })
+        .send({ id: tableId, seats: 4 })
         .expect(201);
     });
 
     it('should remove table', async () => {
       await request(app.getHttpServer())
-        .delete(`/tables/${tableName}`)
+        .delete(`/tables/${tableId}`)
         .expect(200);
     });
   });

@@ -1,11 +1,8 @@
-import { AppModule } from '@/app.module';
-import { TableEventStoreRepository } from '@/infrastructure/repository/table.event-store.repository';
-import { TABLE_EVENT_STORE_REPOSITORY_INTERFACE } from '@/infrastructure/repository/table.event-store.repository.interface';
-import { clearSagaSubscriptions } from '@/test/clear-saga-subscriptions';
-import { mockedConfigService } from '@/test/mocked-config-service';
+import { TableEventStoreRepository } from '@/infrastructure/repository/event-store/table.event-store.repository';
+import { TABLE_EVENT_STORE_REPOSITORY_INTERFACE } from '@/infrastructure/repository/event-store/table.event-store.repository.interface';
+import { setupTestingModule } from '@/test/setup-testing-module';
 import { INestApplication } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import { Test, TestingModule } from '@nestjs/testing';
+import { TestingModule } from '@nestjs/testing';
 import { EVENT_STORE_SERVICE, EventStoreService } from '@rb/event-sourcing';
 import {
   JSONMetadata,
@@ -25,19 +22,8 @@ describe('Place table lock E2E - Table locking saga', () => {
   let eventStoreDbService: EventStoreService;
   let tableEventStoreRepository: TableEventStoreRepository;
 
-  beforeAll(async () => {
-    testingModule = await Test.createTestingModule({
-      imports: [AppModule],
-    })
-      .overrideProvider(ConfigService)
-      .useValue(mockedConfigService)
-      .compile();
-
-    app = testingModule.createNestApplication();
-
-    await clearSagaSubscriptions(app);
-
-    await app.init();
+  beforeEach(async () => {
+    ({ testingModule, app } = await setupTestingModule());
 
     eventStoreDbService = app.get<EventStoreService>(EVENT_STORE_SERVICE);
     tableEventStoreRepository = app.get<TableEventStoreRepository>(
@@ -45,7 +31,7 @@ describe('Place table lock E2E - Table locking saga', () => {
     );
   });
 
-  afterAll(async () => {
+  afterEach(async () => {
     await testingModule.close();
   });
 
@@ -61,7 +47,7 @@ describe('Place table lock E2E - Table locking saga', () => {
       beforeEach(async () => {
         await request(app.getHttpServer())
           .post('/tables')
-          .send({ name: tableId, numberOfSeats: 4 })
+          .send({ id: tableId, seats: 4 })
           .expect(201);
 
         const event = new TableBookingInitiatedEvent(

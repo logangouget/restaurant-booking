@@ -5,9 +5,9 @@ export class AddTableRequest {
   @ApiProperty()
   @IsString()
   @IsNotEmpty()
-  name: string;
+  id: string;
 
   @ApiProperty()
   @IsNumber()
-  numberOfSeats: number;
+  seats: number;
 }

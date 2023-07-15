@@ -1,3 +1,6 @@
 export class AddTableCommand {
-  constructor(public readonly id: string, public readonly seats: number) {}
+  constructor(
+    public readonly id: string,
+    public readonly seats: number,
+  ) {}
 }
