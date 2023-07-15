@@ -31,7 +31,7 @@ describe('Place table lock E2E - Table locking saga', () => {
     );
   });
 
-  afterEach(async () => {
+  afterAll(async () => {
     await testingModule.close();
   });
 

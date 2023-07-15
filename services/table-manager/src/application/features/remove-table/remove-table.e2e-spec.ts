@@ -12,7 +12,7 @@ describe('Remove table E2E - /tables (DELETE)', () => {
     ({ testingModule, app } = await setupTestingModule());
   });
 
-  afterEach(async () => {
+  afterAll(async () => {
     await testingModule.close();
   });
 

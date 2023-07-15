@@ -5,22 +5,39 @@ import { mockConfigServiceGet } from './mocked-config-service';
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 
-export const setupTestingModule = async (): Promise<{
-  testingModule: TestingModule;
-  app: INestApplication;
-}> => {
-  const testingModule = await Test.createTestingModule({
-    imports: [AppModule],
-  }).compile();
+const createSetupFunction = () => {
+  let cached: {
+    testingModule: TestingModule;
+    app: INestApplication;
+  } | null = null;
 
-  const app = testingModule.createNestApplication();
+  return async (): Promise<{
+    testingModule: TestingModule;
+    app: INestApplication;
+  }> => {
+    if (!cached) {
+      const testingModule = await Test.createTestingModule({
+        imports: [AppModule],
+      }).compile();
 
-  mockConfigServiceGet(app);
-  mockLogger();
+      const app = testingModule.createNestApplication();
 
-  await clearTestData(app);
+      mockConfigServiceGet(app);
+      mockLogger();
 
-  await app.init();
+      await clearTestData(app);
 
-  return { testingModule, app };
+      await app.init();
+
+      cached = { testingModule, app };
+
+      return cached;
+    }
+
+    await clearTestData(cached.app);
+
+    return cached;
+  };
 };
+
+export const setupTestingModule = createSetupFunction();
