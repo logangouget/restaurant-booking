@@ -3,7 +3,7 @@ import { ConfirmTableBookingCommand } from './confirm-table-booking.command';
 import {
   TABLE_BOOKING_EVENT_STORE_REPOSITORY_INTERFACE,
   TableBookingEventStoreRepositoryInterface,
-} from '@/infrastructure/repository/table-booking.event-store.repository.interface';
+} from '@/infrastructure/repository/event-store/table-booking.event-store.repository.interface';
 import { Inject } from '@nestjs/common';
 import { TableBookingNotFoundError } from '@/application/errors';
 import { TableBooking } from '@/domain/table-booking';

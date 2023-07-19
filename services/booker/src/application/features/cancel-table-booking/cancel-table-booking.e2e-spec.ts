@@ -1,8 +1,6 @@
-import { AppModule } from '@/app.module';
-import { mockedConfigService } from '@/test/mocked-config-service';
+import { setupTestingModule } from '@/test/setup-testing-module';
 import { INestApplication } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import { Test, TestingModule } from '@nestjs/testing';
+import { TestingModule } from '@nestjs/testing';
 import { EVENT_STORE_SERVICE, EventStoreService } from '@rb/event-sourcing';
 import {
   TableBookingInitiatedEvent,
@@ -10,7 +8,6 @@ import {
 } from '@rb/events';
 import { TableBookingBaseEvent } from '@rb/events/dist/table-booking/table-booking-base-event';
 import { filter, firstValueFrom, take } from 'rxjs';
-import { clearSagaSubscriptions } from '@/test/clear-saga-subscriptions';
 import { v4 as uuid } from 'uuid';
 
 describe('Cancel table booking - Table booking sage', () => {
@@ -18,25 +15,13 @@ describe('Cancel table booking - Table booking sage', () => {
   let app: INestApplication;
   let eventStoreDbService: EventStoreService;
 
-  beforeAll(async () => {
-    testingModule = await Test.createTestingModule({
-      imports: [AppModule],
-    })
-      .overrideProvider(ConfigService)
-      .useValue(mockedConfigService)
-      .compile();
-
-    app = testingModule.createNestApplication();
-
-    await clearSagaSubscriptions(app);
-
-    await app.init();
+  beforeEach(async () => {
+    ({ testingModule, app } = await setupTestingModule());
 
     eventStoreDbService = app.get<EventStoreService>(EVENT_STORE_SERVICE);
   });
 
   afterAll(async () => {
-    await app.close();
     await testingModule.close();
   });
 

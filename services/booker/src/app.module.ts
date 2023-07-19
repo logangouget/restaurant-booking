@@ -1,5 +1,11 @@
 import { InitiateTableBookingModule } from '@/application/features/initiate-table-booking/initiate-table-booking.module';
-import { Inject, Module, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
+import {
+  Inject,
+  Logger,
+  Module,
+  OnApplicationBootstrap,
+  OnModuleDestroy,
+} from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { CqrsModule } from '@nestjs/cqrs';
 import {
@@ -9,7 +15,15 @@ import {
 } from '@rb/event-sourcing';
 import { CancelTableBookingModule } from './application/features/cancel-table-booking/cancel-table-booking.module';
 import { ConfirmTableBookingModule } from './application/features/confirm-table-booking/confirm-table-booking.module';
+import { TableProjection } from './application/projections/table.projection';
 import { TableBookingSaga } from './application/sagas/table-booking.saga';
+import {
+  DB_CONNECTION,
+  DatabaseModule,
+  DbConnectionType,
+} from './infrastructure/repository/database/database.module';
+import { BookingProjection } from './application/projections/booking.projection';
+import { ListAvailableBookingSlotsModule } from './application/features/list-available-booking-slots/list-available-booking-slots.module';
 
 @Module({
   imports: [
@@ -26,24 +40,40 @@ import { TableBookingSaga } from './application/sagas/table-booking.saga';
         };
       },
     }),
+    DatabaseModule,
     InitiateTableBookingModule,
     ConfirmTableBookingModule,
     CancelTableBookingModule,
+    ListAvailableBookingSlotsModule,
   ],
-  providers: [TableBookingSaga],
+  providers: [TableBookingSaga, TableProjection, BookingProjection],
 })
-export class AppModule implements OnModuleDestroy, OnModuleInit {
+export class AppModule implements OnModuleDestroy, OnApplicationBootstrap {
   constructor(
     @Inject(EVENT_STORE_SERVICE)
     private readonly eventStoreService: EventStoreService,
     private readonly tableBookingSaga: TableBookingSaga,
+    @Inject(DB_CONNECTION)
+    private readonly dbConnection: DbConnectionType,
+    private readonly tableProjection: TableProjection,
+    private readonly bookingProjection: BookingProjection,
   ) {}
 
-  async onModuleInit() {
-    await this.tableBookingSaga.init();
+  async onApplicationBootstrap() {
+    const logger = new Logger('Bootstrap');
+
+    try {
+      await this.tableBookingSaga.init();
+      await this.tableProjection.init();
+      await this.bookingProjection.init();
+    } catch (error) {
+      logger.error(error);
+      throw error;
+    }
   }
 
   async onModuleDestroy() {
     await this.eventStoreService.closeClient();
+    await this.dbConnection.end();
   }
 }

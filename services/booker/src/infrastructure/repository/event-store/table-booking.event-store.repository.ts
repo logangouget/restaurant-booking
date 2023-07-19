@@ -50,15 +50,18 @@ export class TableBookingEventStoreRepository
 
     const mappedEvents = this.mapEventsFromJsonEvents(resolvedEvents);
 
-    const bookingEvents = mappedEvents.reduce((acc, event) => {
-      if (!acc[event.data.id]) {
-        acc[event.data.id] = [];
-      }
+    const bookingEvents = mappedEvents.reduce(
+      (acc, event) => {
+        if (!acc[event.data.id]) {
+          acc[event.data.id] = [];
+        }
 
-      acc[event.data.id].push(event);
+        acc[event.data.id].push(event);
 
-      return acc;
-    }, {} as Record<string, TableBookingEvent[]>);
+        return acc;
+      },
+      {} as Record<string, TableBookingEvent[]>,
+    );
 
     const tableBookings = Object.values(bookingEvents).map((bookingEvents) =>
       TableBooking.fromEventsHistory(bookingEvents),

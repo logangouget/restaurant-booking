@@ -6,7 +6,7 @@ import { ConfirmTableBookingHandler } from './confirm-table-booking.handler';
 import {
   TABLE_BOOKING_EVENT_STORE_REPOSITORY_INTERFACE,
   TableBookingEventStoreRepositoryInterface,
-} from '@/infrastructure/repository/table-booking.event-store.repository.interface';
+} from '@/infrastructure/repository/event-store/table-booking.event-store.repository.interface';
 import { TableBookingNotFoundError } from '@/application/errors';
 
 const feature = loadFeature('./confirm-table-booking.feature', {

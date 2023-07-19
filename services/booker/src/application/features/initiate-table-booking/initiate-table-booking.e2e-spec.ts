@@ -1,33 +1,18 @@
-import { AppModule } from '@/app.module';
-import { mockedConfigService } from '@/test/mocked-config-service';
+import { setupTestingModule } from '@/test/setup-testing-module';
 import { INestApplication } from '@nestjs/common/interfaces';
-import { ConfigService } from '@nestjs/config';
-import { Test, TestingModule } from '@nestjs/testing';
+import { TestingModule } from '@nestjs/testing';
 import * as request from 'supertest';
-import { clearSagaSubscriptions } from '@/test/clear-saga-subscriptions';
 import { v4 as uuidv4 } from 'uuid';
 
 describe('Book table E2E - /bookings/initiate (POST)', () => {
   let testingModule: TestingModule;
   let app: INestApplication;
 
-  beforeAll(async () => {
-    testingModule = await Test.createTestingModule({
-      imports: [AppModule],
-    })
-      .overrideProvider(ConfigService)
-      .useValue(mockedConfigService)
-      .compile();
-
-    app = testingModule.createNestApplication();
-
-    await clearSagaSubscriptions(app);
-
-    await app.init();
+  beforeEach(async () => {
+    ({ testingModule, app } = await setupTestingModule());
   });
 
   afterAll(async () => {
-    await app.close();
     await testingModule.close();
   });
 
