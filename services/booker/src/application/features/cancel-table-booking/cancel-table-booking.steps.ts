@@ -1,7 +1,7 @@
 import {
   TableBookingEventStoreRepositoryInterface,
   TABLE_BOOKING_EVENT_STORE_REPOSITORY_INTERFACE,
-} from '@/infrastructure/repository/table-booking.event-store.repository.interface';
+} from '@/infrastructure/repository/event-store/table-booking.event-store.repository.interface';
 import { Test, TestingModule } from '@nestjs/testing';
 import { loadFeature, defineFeature } from 'jest-cucumber';
 import { CancelTableBookingHandler } from './cancel-table-booking.handler';

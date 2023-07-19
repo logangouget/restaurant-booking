@@ -53,7 +53,7 @@ export class AppModule implements OnModuleDestroy, OnApplicationBootstrap {
     private readonly eventStoreService: EventStoreService,
     @Inject(DB_CONNECTION)
     private readonly dbConnection: DbConnectionType,
-    private readonly tableBookingSaga: TableLockingSaga,
+    private readonly tableLockingSaga: TableLockingSaga,
     private readonly tableProjection: TableProjection,
   ) {}
 
@@ -61,7 +61,7 @@ export class AppModule implements OnModuleDestroy, OnApplicationBootstrap {
     const logger = new Logger('Bootstrap');
 
     try {
-      await this.tableBookingSaga.init();
+      await this.tableLockingSaga.init();
       await this.tableProjection.init();
     } catch (error) {
       logger.error(error);

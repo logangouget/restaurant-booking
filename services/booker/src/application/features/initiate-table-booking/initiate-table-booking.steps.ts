@@ -5,7 +5,7 @@ import { TableBooking, TimeSlot } from '@/domain/table-booking';
 import {
   TABLE_BOOKING_EVENT_STORE_REPOSITORY_INTERFACE,
   TableBookingEventStoreRepositoryInterface,
-} from '@/infrastructure/repository/table-booking.event-store.repository.interface';
+} from '@/infrastructure/repository/event-store/table-booking.event-store.repository.interface';
 import { SlotUnavailableException } from '@/domain/exceptions';
 
 const feature = loadFeature('./initiate-table-booking.feature', {

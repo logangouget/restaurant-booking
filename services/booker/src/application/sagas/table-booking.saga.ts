@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { CommandBus } from '@nestjs/cqrs';
 import { EVENT_STORE_SERVICE, EventStoreService } from '@rb/event-sourcing';
@@ -21,6 +21,10 @@ export class TableBookingSaga {
   ) {}
 
   async init() {
+    const logger = new Logger('TableBookingSaga');
+
+    logger.debug('Initializing TableBookingSaga');
+
     const tableLockPlacedStreamName = '$et-table-lock-placed';
 
     const tableLockPlacedGroupName = this.configService.get<string>(
@@ -33,8 +37,12 @@ export class TableBookingSaga {
         tableLockPlacedGroupName,
       );
 
-    tableLockedSource$.subscribe((resolvedEvent) => {
-      this.onTableLocked(resolvedEvent);
+    tableLockedSource$.subscribe(async (resolvedEvent) => {
+      try {
+        await this.onTableLocked(resolvedEvent);
+      } catch (error) {
+        logger.error(error);
+      }
     });
 
     const tableLockPlacementFailedStreamName =
@@ -50,8 +58,12 @@ export class TableBookingSaga {
         tableLockPlacementFailedGroupName,
       );
 
-    tableLockPlacementFailedSource$.subscribe((resolvedEvent) => {
-      this.onTableLockPlacementFailed(resolvedEvent);
+    tableLockPlacementFailedSource$.subscribe(async (resolvedEvent) => {
+      try {
+        await this.onTableLockPlacementFailed(resolvedEvent);
+      } catch (error) {
+        logger.error(error);
+      }
     });
   }
 
