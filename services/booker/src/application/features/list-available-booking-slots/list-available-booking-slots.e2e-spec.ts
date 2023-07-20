@@ -79,6 +79,19 @@ describe('List available booking slots E2E - /booking-slots (GET)', () => {
       });
     });
 
+    describe('When there is too much time between startDate and endDate', () => {
+      it('should return 400', async () => {
+        await request(app.getHttpServer())
+          .get('/booking-slots')
+          .query({
+            startDate: '2023-01-01',
+            endDate: '2023-01-16',
+            people: 4,
+          })
+          .expect(400);
+      });
+    });
+
     describe('When people is missing', () => {
       it('should return 400', async () => {
         await request(app.getHttpServer())
