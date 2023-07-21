@@ -1,9 +1,9 @@
 import { AppModule } from '@/app.module';
-import { clearTestData } from './clear-test-data';
-import { mockLogger } from './mock-logger';
-import { mockConfigServiceGet } from './mocked-config-service';
-import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
+import { Test, TestingModule } from '@nestjs/testing';
+import { clearTestData } from './clear-test-data';
+import { mockConfigServiceGet } from './mocked-config-service';
+import { mockLogger } from './mock-logger';
 
 const createSetupFunction = () => {
   let cached: {

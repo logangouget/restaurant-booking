@@ -19,5 +19,9 @@ export const clearSagaSubscriptions = async (app: INestApplication) => {
       streamName: '$et-table-lock-placed',
       groupName: configService.get('TABLE_LOCKING_SAGA_GROUP_NAME'),
     }),
+    ackAllPersistentSubscriptionEvents(eventStoreService, {
+      streamName: '$et-table-booking-cancelled',
+      groupName: configService.get('TABLE_LOCKING_SAGA_GROUP_NAME'),
+    }),
   ]);
 };
