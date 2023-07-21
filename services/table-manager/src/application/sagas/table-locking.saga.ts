@@ -5,11 +5,13 @@ import { EVENT_STORE_SERVICE, EventStoreService } from '@rb/event-sourcing';
 import { AcknowledgeableEventStoreEvent } from '@rb/event-sourcing/dist/store/acknowledgeable-event-store-event';
 import {
   JSONMetadata,
+  parseTableBookingCancelledEventData,
   parseTableBookingInitiatedEventData,
   parseTableLockPlacedEventData,
 } from '@rb/events';
 import { TableNotFoundError } from '../errors';
 import { PlaceTableLockCommand } from '../features/place-table-lock/place-table-lock.command';
+import { ScheduleTableLockRemovalCommand } from '../features/remove-table-lock/schedule-table-lock-removal.command';
 import { RemoveTableLockCommand } from '../features/remove-table-lock/remove-table-lock.command';
 
 @Injectable()
@@ -64,6 +66,25 @@ export class TableLockingSaga {
         logger.error(error);
       }
     });
+
+    const bookingCancelledStreamName = '$et-table-booking-cancelled';
+    const bookingCancelledGroupName = this.configService.get<string>(
+      'TABLE_LOCKING_SAGA_GROUP_NAME',
+    );
+
+    const bookingCancelledSource$ =
+      await this.eventStoreDbService.initPersistentSubscriptionToStream(
+        bookingCancelledStreamName,
+        bookingCancelledGroupName,
+      );
+
+    bookingCancelledSource$.subscribe(async (resolvedEvent) => {
+      try {
+        await this.onBookingCancelled(resolvedEvent);
+      } catch (error) {
+        logger.error(error);
+      }
+    });
   }
 
   async onTableBookingInitiated(resolvedEvent: AcknowledgeableEventStoreEvent) {
@@ -73,10 +94,7 @@ export class TableLockingSaga {
 
     const command = new PlaceTableLockCommand(
       eventData.tableId,
-      {
-        from: new Date(eventData.timeSlot.from),
-        to: new Date(eventData.timeSlot.to),
-      },
+      eventData.timeSlot,
       eventMetadata.$correlationId,
     );
 
@@ -98,8 +116,24 @@ export class TableLockingSaga {
 
     const eventMetadata = resolvedEvent.metadata as JSONMetadata;
 
-    const command = new RemoveTableLockCommand(
+    const command = new ScheduleTableLockRemovalCommand(
       eventData.id,
+      eventData.timeSlot,
+      eventMetadata.$correlationId,
+    );
+
+    await this.commandBus.execute(command);
+
+    await resolvedEvent.ack();
+  }
+
+  async onBookingCancelled(resolvedEvent: AcknowledgeableEventStoreEvent) {
+    const eventData = parseTableBookingCancelledEventData(resolvedEvent.data);
+
+    const eventMetadata = resolvedEvent.metadata as JSONMetadata;
+
+    const command = new RemoveTableLockCommand(
+      eventData.tableId,
       eventData.timeSlot,
       eventMetadata.$correlationId,
     );

@@ -82,7 +82,7 @@ export class EventStoreDbService implements EventStoreService {
       await this.client.listAllPersistentSubscriptions();
 
     const existingSubscription = currentSubscriptions.find(
-      (sub) => sub.groupName === groupName,
+      (sub) => sub.groupName === groupName && sub.eventSource === streamName,
     );
 
     if (!existingSubscription) {

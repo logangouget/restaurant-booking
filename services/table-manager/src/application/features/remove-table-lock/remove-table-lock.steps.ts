@@ -1,3 +1,7 @@
+import {
+  TableLockNotFoundError,
+  TableNotFoundError,
+} from '@/application/errors';
 import { Table, TimeSlot } from '@/domain/table';
 import {
   TABLE_EVENT_STORE_REPOSITORY_INTERFACE,
@@ -5,13 +9,9 @@ import {
 } from '@/infrastructure/repository/event-store/table.event-store.repository.interface';
 import { Test, TestingModule } from '@nestjs/testing';
 import { defineFeature, loadFeature } from 'jest-cucumber';
-import { RemoveTableLockHandler } from './remove-table-lock-handler';
-import {
-  TableLockNotFoundError,
-  TableNotFoundError,
-} from '@/application/errors';
-import { RemoveTableLockJobProcessor } from './remove-table-lock-job-processor';
-import { Job } from 'bullmq';
+import { RemoveTableLockCommand } from './remove-table-lock.command';
+import { RemoveTableLockHandler } from './remove-table-lock.handler';
+import { ScheduleTableLockRemovalHandler } from './schedule-table-lock-removal.handler';
 
 const feature = loadFeature('./remove-table-lock.feature', {
   loadRelativePath: true,
@@ -19,8 +19,8 @@ const feature = loadFeature('./remove-table-lock.feature', {
 
 defineFeature(feature, (test) => {
   let testingModule: TestingModule;
+  let scheduleTableLockRemovalHandler: ScheduleTableLockRemovalHandler;
   let removeTableLockHandler: RemoveTableLockHandler;
-  let removeTableLockJobProcessor: RemoveTableLockJobProcessor;
 
   const mockedTableEventStoreRepository: jest.Mocked<TableEventStoreRepositoryInterface> =
     {
@@ -35,25 +35,21 @@ defineFeature(feature, (test) => {
   beforeAll(async () => {
     testingModule = await Test.createTestingModule({
       providers: [
+        ScheduleTableLockRemovalHandler,
         RemoveTableLockHandler,
-        RemoveTableLockJobProcessor,
         {
           provide: TABLE_EVENT_STORE_REPOSITORY_INTERFACE,
           useValue: mockedTableEventStoreRepository,
         },
-        {
-          provide: 'BullQueue_remove-table-lock',
-          useValue: mockedQueue,
-        },
       ],
     }).compile();
+    scheduleTableLockRemovalHandler =
+      testingModule.get<ScheduleTableLockRemovalHandler>(
+        ScheduleTableLockRemovalHandler,
+      );
     removeTableLockHandler = testingModule.get<RemoveTableLockHandler>(
       RemoveTableLockHandler,
     );
-    removeTableLockJobProcessor =
-      testingModule.get<RemoveTableLockJobProcessor>(
-        RemoveTableLockJobProcessor,
-      );
   });
 
   test('Schedule a table lock removal', ({ given, and, when, then }) => {
@@ -82,7 +78,7 @@ defineFeature(feature, (test) => {
     );
 
     when('I schedule a lock removal for the previous lock', async () => {
-      await removeTableLockHandler.execute({
+      await scheduleTableLockRemovalHandler.execute({
         tableId,
         timeSlot,
         correlationId: 'correlationId',
@@ -131,7 +127,7 @@ defineFeature(feature, (test) => {
         );
 
         try {
-          await removeTableLockHandler.execute({
+          await scheduleTableLockRemovalHandler.execute({
             tableId: id,
             timeSlot: {
               from: new Date(),
@@ -172,7 +168,7 @@ defineFeature(feature, (test) => {
 
     when('I schedule a lock removal', async () => {
       try {
-        await removeTableLockHandler.execute({
+        await scheduleTableLockRemovalHandler.execute({
           tableId,
           timeSlot: {
             from: new Date(),
@@ -217,16 +213,9 @@ defineFeature(feature, (test) => {
     );
 
     when('I remove the lock', async () => {
-      await removeTableLockJobProcessor.removeTableLock({
-        data: {
-          tableId,
-          timeSlot: {
-            from: timeSlot.from.toISOString(),
-            to: timeSlot.to.toISOString(),
-          },
-          correlationId: 'correlationId',
-        },
-      } as Job);
+      await removeTableLockHandler.execute(
+        new RemoveTableLockCommand(tableId, timeSlot, 'correlationId'),
+      );
     });
 
     then('the table lock should be removed', () => {
@@ -254,16 +243,16 @@ defineFeature(feature, (test) => {
       mockedTableEventStoreRepository.findTableById.mockResolvedValueOnce(null);
 
       try {
-        await removeTableLockJobProcessor.removeTableLock({
-          data: {
-            tableId: 'tableId',
-            timeSlot: {
-              from: new Date().toISOString(),
-              to: new Date().toISOString(),
+        await removeTableLockHandler.execute(
+          new RemoveTableLockCommand(
+            'tableId',
+            {
+              from: new Date(),
+              to: new Date(),
             },
-            correlationId: 'correlationId',
-          },
-        } as Job);
+            'correlationId',
+          ),
+        );
       } catch (err) {
         error = err;
       }

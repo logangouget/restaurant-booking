@@ -5,11 +5,11 @@ import { setupTestingModule } from '@/test/setup-testing-module';
 import { INestApplication } from '@nestjs/common';
 import { TestingModule } from '@nestjs/testing';
 import { EventStoreService, EVENT_STORE_SERVICE } from '@rb/event-sourcing';
-import { TableBookingCancelledEvent, TableLockPlacedEvent } from '@rb/events';
-import { v4 as uuid } from 'uuid';
+import { TableLockPlacedEvent } from '@rb/events';
 import * as request from 'supertest';
+import { v4 as uuid } from 'uuid';
 
-describe('Remove table lock E2E - Table locking saga', () => {
+describe('Schedule table lock removal E2E - Table locking saga', () => {
   let testingModule: TestingModule;
   let app: INestApplication;
   let eventStoreDbService: EventStoreService;
@@ -28,13 +28,13 @@ describe('Remove table lock E2E - Table locking saga', () => {
     await testingModule.close();
   });
 
-  describe('When a table lock is placed and a booking is cancelled', () => {
+  describe('When a table lock is placed', () => {
     const tableId = uuid();
     const timeSlotFrom = new Date();
 
     const timeSlot = {
       from: timeSlotFrom,
-      to: new Date(timeSlotFrom.getTime() + 24 * 60 * 60 * 1000),
+      to: new Date(timeSlotFrom.getTime() + 1000),
     };
 
     beforeEach(async () => {
@@ -46,14 +46,6 @@ describe('Remove table lock E2E - Table locking saga', () => {
       await eventStoreDbService.publish(
         new TableLockPlacedEvent({
           id: tableId,
-          timeSlot,
-        }),
-      );
-
-      await eventStoreDbService.publish(
-        new TableBookingCancelledEvent({
-          id: uuid(),
-          tableId,
           timeSlot,
         }),
       );

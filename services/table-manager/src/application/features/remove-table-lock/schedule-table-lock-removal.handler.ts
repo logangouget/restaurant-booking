@@ -2,8 +2,8 @@ import { InjectQueue } from '@nestjs/bull';
 import { Inject, Logger } from '@nestjs/common';
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
 import { Queue } from 'bullmq';
-import { RemoveTableLockJobPayload } from './remove-table-lock-job-payload';
-import { RemoveTableLockCommand } from './remove-table-lock.command';
+import { RemoveTableLockJobPayload } from './remove-table-lock.job-payload';
+import { ScheduleTableLockRemovalCommand } from './schedule-table-lock-removal.command';
 import {
   TABLE_EVENT_STORE_REPOSITORY_INTERFACE,
   TableEventStoreRepositoryInterface,
@@ -13,11 +13,11 @@ import {
   TableNotFoundError,
 } from '@/application/errors';
 
-@CommandHandler(RemoveTableLockCommand)
-export class RemoveTableLockHandler
-  implements ICommandHandler<RemoveTableLockCommand>
+@CommandHandler(ScheduleTableLockRemovalCommand)
+export class ScheduleTableLockRemovalHandler
+  implements ICommandHandler<ScheduleTableLockRemovalCommand>
 {
-  private readonly logger = new Logger(RemoveTableLockHandler.name);
+  private readonly logger = new Logger(ScheduleTableLockRemovalHandler.name);
 
   constructor(
     @InjectQueue('remove-table-lock')
@@ -26,7 +26,7 @@ export class RemoveTableLockHandler
     private readonly tableEventStoreRepository: TableEventStoreRepositoryInterface,
   ) {}
 
-  async execute(command: RemoveTableLockCommand): Promise<void> {
+  async execute(command: ScheduleTableLockRemovalCommand): Promise<void> {
     this.logger.debug(
       `Scheduling job 'remove-table-lock' for table ${command.tableId}`,
       {
