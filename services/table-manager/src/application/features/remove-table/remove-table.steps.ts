@@ -7,6 +7,7 @@ import {
 import { RemoveTableHandler } from './remove-table.handler';
 import { Table } from '@/domain/table';
 import { RemoveTableCommand } from './remove-table.command';
+import { TableLockedError } from '@/application/errors';
 
 const feature = loadFeature('./remove-table.feature', {
   loadRelativePath: true,
@@ -35,13 +36,9 @@ defineFeature(feature, (test) => {
     removeTable = testingModule.get<RemoveTableHandler>(RemoveTableHandler);
   });
 
-  test('Remove a table as a manager', ({ given, when, then }) => {
+  test('Remove a table', ({ given, when, then }) => {
     let error: Error;
     let table: Table;
-
-    given('I am a manager', () => {
-      // TODO: implement
-    });
 
     given(/^An existing table with the identifier "(.*)"$/, (id: string) => {
       table = new Table(id);
@@ -66,15 +63,11 @@ defineFeature(feature, (test) => {
     });
   });
 
-  test('Giving a non-existing table', ({ given, when, then }) => {
+  test('Giving a non-existing table', ({ when, then }) => {
     let error: Error;
 
     beforeEach(async () => {
       mockedTableEventStoreRepository.findTableById.mockResolvedValue(null);
-    });
-
-    given('I am a manager', () => {
-      // TODO : implement
     });
 
     when(
@@ -91,6 +84,37 @@ defineFeature(feature, (test) => {
 
     then('It should not be removed to the list of tables', () => {
       expect(error).toBeDefined();
+    });
+  });
+
+  test('Remove a locked table', ({ given, and, when, then }) => {
+    let table: Table;
+    let error: Error;
+
+    given(/^An existing table with the identifier "(.*)"$/, (id: string) => {
+      table = new Table(id);
+      mockedTableEventStoreRepository.findTableById.mockResolvedValue(table);
+    });
+
+    and(/^The table "(.*)" is locked$/, () => {
+      table.placeLock({
+        from: new Date(),
+        to: new Date(),
+      });
+    });
+
+    when(/^I remove a table with the identifier "(.*)"$/, async () => {
+      const command = new RemoveTableCommand(table.id);
+
+      try {
+        await removeTable.execute(command);
+      } catch (err) {
+        error = err;
+      }
+    });
+
+    then('It should not be removed to the list of tables', () => {
+      expect(error).toBeInstanceOf(TableLockedError);
     });
   });
 });
