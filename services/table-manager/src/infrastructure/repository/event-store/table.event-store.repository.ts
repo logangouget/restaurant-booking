@@ -15,6 +15,10 @@ import {
 import { TableBaseEvent } from '@rb/events/dist/table/table-base-event';
 import { lastValueFrom, toArray } from 'rxjs';
 import { TableEventStoreRepositoryInterface } from './table.event-store.repository.interface';
+import {
+  TableLockRemovedEvent,
+  parseTableLockRemovedEventData,
+} from '@rb/events/dist/table/table-lock-removed-event';
 
 @Injectable()
 export class TableEventStoreRepository
@@ -72,6 +76,11 @@ export class TableEventStoreRepository
           const data = parseTableLockPlacedEventData(resolvedEvent.data);
 
           return new TableLockPlacedEvent(data);
+        }
+        case 'table-lock-removed': {
+          const data = parseTableLockRemovedEventData(resolvedEvent.data);
+
+          return new TableLockRemovedEvent(data);
         }
         default:
           throw new Error(`Event type ${resolvedEvent.type} not supported`);

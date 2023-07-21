@@ -7,6 +7,7 @@ import {
   TableRemovedEvent,
 } from '@rb/events';
 import { InvalidTableIdException } from './exceptions';
+import { TableLockRemovedEvent } from '@rb/events/dist/table/table-lock-removed-event';
 
 export interface TimeSlot {
   from: Date;
@@ -48,8 +49,25 @@ export class Table extends AggregateRoot<TableEvent> {
     );
   }
 
+  removeLock(timeSlot: TimeSlot) {
+    this.apply(
+      new TableLockRemovedEvent({
+        id: this.id,
+        timeSlot,
+      }),
+    );
+  }
+
   getUncommittedEvents(): TableEvent[] {
     return super.getUncommittedEvents() as TableEvent[];
+  }
+
+  getLockByTimeSlot(timeSlot: TimeSlot) {
+    return this.locks.find(
+      (lock) =>
+        lock.from.getTime() === timeSlot.from.getTime() &&
+        lock.to.getTime() === timeSlot.to.getTime(),
+    );
   }
 
   private onTableAddedEvent(event: TableAddedEvent) {
@@ -65,6 +83,12 @@ export class Table extends AggregateRoot<TableEvent> {
     this.locks.push(event.data.timeSlot);
   }
 
+  private onTableLockRemovedEvent(event: TableLockRemovedEvent) {
+    this.locks = this.locks.filter(
+      (lock) => lock.from.getTime() !== event.data.timeSlot.from.getTime(),
+    );
+  }
+
   protected getEventHandler<T extends TableEvent>(
     event: T,
   ): Type<IEventHandler<T>> {
@@ -75,6 +99,8 @@ export class Table extends AggregateRoot<TableEvent> {
         return this.onTableRemovedEvent.bind(this);
       case 'table-lock-placed':
         return this.onTableLockPlacedEvent.bind(this);
+      case 'table-lock-removed':
+        return this.onTableLockRemovedEvent.bind(this);
     }
   }
 
