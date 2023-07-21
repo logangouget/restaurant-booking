@@ -37,5 +37,22 @@ services:
     volumes:
       - pgadmin_config:/var/lib/pgadmin
 
+  redis:
+    image: redis:latest
+    ports:
+      - "6379:6379"
+  
+  bullboard:
+    container_name: bullboard
+    image: deadly0/bull-board
+    restart: always
+    ports:
+      - 6300:3000
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - BULL_PREFIX=bull
+
 volumes:
   pgadmin_config:
+

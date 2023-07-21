@@ -23,6 +23,8 @@ import {
   DatabaseModule,
   DbConnectionType,
 } from './infrastructure/repository/database/database.module';
+import { BullModule } from '@nestjs/bull';
+import { RemoveTableLockModule } from './application/features/remove-table-lock/remove-table-lock.module';
 
 @Module({
   imports: [
@@ -39,10 +41,20 @@ import {
         };
       },
     }),
+    BullModule.forRootAsync({
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) => ({
+        redis: {
+          host: configService.get<string>('REDIS_HOST'),
+          port: configService.get<number>('REDIS_PORT'),
+        },
+      }),
+    }),
     DatabaseModule,
     AddTableModule,
     RemoveTableModule,
     PlaceTableLockModule,
+    RemoveTableLockModule,
     ListTablesModule,
   ],
   providers: [TableLockingSaga, TableProjection],
