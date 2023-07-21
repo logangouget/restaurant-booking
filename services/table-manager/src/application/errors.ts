@@ -13,3 +13,9 @@ export class TableLockNotFoundError extends Error {
     );
   }
 }
+
+export class TableLockedError extends Error {
+  constructor(id: string) {
+    super(`Table with id ${id} is locked`);
+  }
+}

@@ -8,6 +8,7 @@ import {
 } from '@rb/events';
 import { InvalidTableIdException } from './exceptions';
 import { TableLockRemovedEvent } from '@rb/events/dist/table/table-lock-removed-event';
+import { TableLockedError } from '@/application/errors';
 
 export interface TimeSlot {
   from: Date;
@@ -37,6 +38,10 @@ export class Table extends AggregateRoot<TableEvent> {
   }
 
   remove() {
+    if (this.locks.length > 0) {
+      throw new TableLockedError(this.id);
+    }
+
     this.apply(new TableRemovedEvent(this.id));
   }
 
