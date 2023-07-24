@@ -12,7 +12,9 @@ export const clearTestData = async (
 ) => {
   await Promise.all([
     clearDatabase(app),
-    ...(options?.clearSagasSubscriptions ? [clearSagaSubscriptions(app)] : []),
-    ...(options?.clearProjections ? [clearProjections(app)] : []),
+    ...(options?.clearSagasSubscriptions ?? true
+      ? [clearSagaSubscriptions(app)]
+      : []),
+    ...(options?.clearProjections ?? true ? [clearProjections(app)] : []),
   ]);
 };

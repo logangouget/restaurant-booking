@@ -12,6 +12,7 @@ import { CommandBus } from '@nestjs/cqrs';
 import { BookTableRequest } from './dto/book-table.request';
 import { BookTableResponse } from './dto/book-table.response';
 import { InitiateTableBookingCommand } from './initiate-table-booking.command';
+import { ApiProperty, ApiResponse } from '@nestjs/swagger';
 
 @Controller()
 @UsePipes(
@@ -23,6 +24,19 @@ export class InitiateTableBookingController {
   constructor(private readonly commandBus: CommandBus) {}
 
   @Post('booking/initiate')
+  @ApiProperty({
+    description: 'Initiate a booking',
+    type: BookTableResponse,
+  })
+  @ApiResponse({
+    status: 201,
+    description: 'The booking has been successfully initiated.',
+    type: BookTableResponse,
+  })
+  @ApiResponse({
+    status: 409,
+    description: 'The booking could not be initiated.',
+  })
   async initiateBooking(
     @Body() body: BookTableRequest,
   ): Promise<BookTableResponse> {

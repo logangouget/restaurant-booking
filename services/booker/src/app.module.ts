@@ -24,6 +24,7 @@ import {
 } from './infrastructure/repository/database/database.module';
 import { BookingProjection } from './application/projections/booking.projection';
 import { ListAvailableBookingSlotsModule } from './application/features/list-available-booking-slots/list-available-booking-slots.module';
+import { ShowBookingModule } from './application/features/show-booking/show-booking.module';
 
 @Module({
   imports: [
@@ -45,6 +46,7 @@ import { ListAvailableBookingSlotsModule } from './application/features/list-ava
     ConfirmTableBookingModule,
     CancelTableBookingModule,
     ListAvailableBookingSlotsModule,
+    ShowBookingModule,
   ],
   providers: [TableBookingSaga, TableProjection, BookingProjection],
 })
