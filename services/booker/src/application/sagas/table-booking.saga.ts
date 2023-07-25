@@ -8,11 +8,14 @@ import {
   parseTableLockPlacedEventData,
   parseTableLockPlacementFailedEventData,
 } from '@rb/events';
+import { concatMap, merge } from 'rxjs';
 import { CancelTableBookingCommand } from '../features/cancel-table-booking/cancel-table-booking.command';
 import { ConfirmTableBookingCommand } from '../features/confirm-table-booking/confirm-table-booking.command';
 
 @Injectable()
 export class TableBookingSaga {
+  private readonly logger = new Logger(TableBookingSaga.name);
+
   constructor(
     @Inject(EVENT_STORE_SERVICE)
     private readonly eventStoreDbService: EventStoreService,
@@ -21,50 +24,56 @@ export class TableBookingSaga {
   ) {}
 
   async init() {
-    const logger = new Logger('TableBookingSaga');
-
-    logger.debug('Initializing TableBookingSaga');
+    this.logger.log('Initializing TableBookingSaga');
 
     const tableLockPlacedStreamName = '$et-table-lock-placed';
-
     const tableLockPlacedGroupName = this.configService.get<string>(
       'TABLE_BOOKING_SAGA_LOCK_PLACED_GROUP_NAME',
     );
-
-    const tableLockedSource$ =
-      await this.eventStoreDbService.initPersistentSubscriptionToStream(
-        tableLockPlacedStreamName,
-        tableLockPlacedGroupName,
-      );
-
-    tableLockedSource$.subscribe(async (resolvedEvent) => {
-      try {
-        await this.onTableLocked(resolvedEvent);
-      } catch (error) {
-        logger.error(error);
-      }
-    });
-
     const tableLockPlacementFailedStreamName =
       '$et-table-lock-placement-failed';
-
     const tableLockPlacementFailedGroupName = this.configService.get<string>(
       'TABLE_BOOKING_SAGA_LOCK_PLACEMENT_FAILED_GROUP_NAME',
     );
 
-    const tableLockPlacementFailedSource$ =
-      await this.eventStoreDbService.initPersistentSubscriptionToStream(
+    const sources$ = await Promise.all([
+      this.eventStoreDbService.initPersistentSubscriptionToStream(
+        tableLockPlacedStreamName,
+        tableLockPlacedGroupName,
+      ),
+      this.eventStoreDbService.initPersistentSubscriptionToStream(
         tableLockPlacementFailedStreamName,
         tableLockPlacementFailedGroupName,
-      );
+      ),
+    ]);
 
-    tableLockPlacementFailedSource$.subscribe(async (resolvedEvent) => {
-      try {
-        await this.onTableLockPlacementFailed(resolvedEvent);
-      } catch (error) {
-        logger.error(error);
+    merge(sources$)
+      .pipe(
+        concatMap((events) => events),
+        concatMap((event) => this.handleEvent(event)),
+      )
+      .subscribe();
+  }
+
+  private async handleEvent(resolvedEvent: AcknowledgeableEventStoreEvent) {
+    const type = resolvedEvent.type;
+
+    this.logger.debug(`Handling event: ${type}`);
+
+    try {
+      switch (type) {
+        case 'table-lock-placed':
+          await this.onTableLockPlaced(resolvedEvent);
+          break;
+        case 'table-lock-placement-failed':
+          await this.onTableLockPlacementFailed(resolvedEvent);
+          break;
+        default:
+          this.logger.warn(`Unhandled event type: ${type}`);
       }
-    });
+    } catch (error) {
+      this.logger.error(error);
+    }
   }
 
   async onTableLockPlacementFailed(
@@ -85,7 +94,7 @@ export class TableBookingSaga {
     await resolvedEvent.ack();
   }
 
-  async onTableLocked(resolvedEvent: AcknowledgeableEventStoreEvent) {
+  async onTableLockPlaced(resolvedEvent: AcknowledgeableEventStoreEvent) {
     const eventData = parseTableLockPlacedEventData(resolvedEvent.data);
     const eventMetadata = resolvedEvent.metadata as JSONMetadata;
 

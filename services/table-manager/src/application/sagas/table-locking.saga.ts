@@ -9,13 +9,16 @@ import {
   parseTableBookingInitiatedEventData,
   parseTableLockPlacedEventData,
 } from '@rb/events';
+import { concatMap, merge } from 'rxjs';
 import { TableNotFoundError } from '../errors';
 import { PlaceTableLockCommand } from '../features/place-table-lock/place-table-lock.command';
-import { ScheduleTableLockRemovalCommand } from '../features/remove-table-lock/schedule-table-lock-removal.command';
 import { RemoveTableLockCommand } from '../features/remove-table-lock/remove-table-lock.command';
+import { ScheduleTableLockRemovalCommand } from '../features/remove-table-lock/schedule-table-lock-removal.command';
 
 @Injectable()
 export class TableLockingSaga {
+  private readonly logger = new Logger(TableLockingSaga.name);
+
   constructor(
     @Inject(EVENT_STORE_SERVICE)
     private readonly eventStoreDbService: EventStoreService,
@@ -34,57 +37,54 @@ export class TableLockingSaga {
       'TABLE_LOCKING_SAGA_GROUP_NAME',
     );
 
-    const source$ =
-      await this.eventStoreDbService.initPersistentSubscriptionToStream(
-        streamName,
-        groupName,
-      );
-
-    source$.subscribe(async (resolvedEvent) => {
-      try {
-        await this.onTableBookingInitiated(resolvedEvent);
-      } catch (error) {
-        logger.error(error);
-      }
-    });
-
     const tableLockedStreamName = '$et-table-lock-placed';
     const tableLockedGroupName = this.configService.get<string>(
       'TABLE_LOCKING_SAGA_GROUP_NAME',
     );
-
-    const tableLockedSource$ =
-      await this.eventStoreDbService.initPersistentSubscriptionToStream(
-        tableLockedStreamName,
-        tableLockedGroupName,
-      );
-
-    tableLockedSource$.subscribe(async (resolvedEvent) => {
-      try {
-        await this.onTableLocked(resolvedEvent);
-      } catch (error) {
-        logger.error(error);
-      }
-    });
 
     const bookingCancelledStreamName = '$et-table-booking-cancelled';
     const bookingCancelledGroupName = this.configService.get<string>(
       'TABLE_LOCKING_SAGA_GROUP_NAME',
     );
 
-    const bookingCancelledSource$ =
-      await this.eventStoreDbService.initPersistentSubscriptionToStream(
+    const sources$ = await Promise.all([
+      this.eventStoreDbService.initPersistentSubscriptionToStream(
+        streamName,
+        groupName,
+      ),
+      this.eventStoreDbService.initPersistentSubscriptionToStream(
+        tableLockedStreamName,
+        tableLockedGroupName,
+      ),
+      this.eventStoreDbService.initPersistentSubscriptionToStream(
         bookingCancelledStreamName,
         bookingCancelledGroupName,
-      );
+      ),
+    ]);
 
-    bookingCancelledSource$.subscribe(async (resolvedEvent) => {
-      try {
+    merge(sources$)
+      .pipe(
+        concatMap((events) => events),
+        concatMap((event) => this.handleEvent(event)),
+      )
+      .subscribe();
+  }
+
+  private async handleEvent(resolvedEvent: AcknowledgeableEventStoreEvent) {
+    this.logger.debug(`Handling event: ${resolvedEvent.type}`);
+    switch (resolvedEvent.type) {
+      case 'table-booking-initiated':
+        await this.onTableBookingInitiated(resolvedEvent);
+        break;
+      case 'table-lock-placed':
+        await this.onTableLocked(resolvedEvent);
+        break;
+      case 'table-booking-cancelled':
         await this.onBookingCancelled(resolvedEvent);
-      } catch (error) {
-        logger.error(error);
-      }
-    });
+        break;
+      default:
+        this.logger.debug(`Unhandled event: ${resolvedEvent.type}`);
+    }
   }
 
   async onTableBookingInitiated(resolvedEvent: AcknowledgeableEventStoreEvent) {

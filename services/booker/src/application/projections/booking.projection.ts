@@ -8,15 +8,19 @@ import { ConfigService } from '@nestjs/config';
 import { EVENT_STORE_SERVICE, EventStoreService } from '@rb/event-sourcing';
 import { AcknowledgeableEventStoreEvent } from '@rb/event-sourcing/dist/store/acknowledgeable-event-store-event';
 import {
+  TableBookingEvent,
   TableBookingEventType,
   parseTableBookingCancelledEventData,
   parseTableBookingInitiatedEventData,
   parseTableLockPlacedEventData,
 } from '@rb/events';
 import { eq } from 'drizzle-orm';
+import { concatMap, groupBy, mergeMap } from 'rxjs';
 
 @Injectable()
 export class BookingProjection {
+  private readonly logger = new Logger(BookingProjection.name);
+
   constructor(
     @Inject(DB)
     private readonly db: DbType,
@@ -26,12 +30,9 @@ export class BookingProjection {
   ) {}
 
   async init() {
-    const logger = new Logger('BookingProjection');
-
-    logger.debug('Initializing BookingProjection');
+    this.logger.log('Initializing BookingProjection');
 
     const streamName = '$ce-table_booking';
-
     const groupName = this.configService.get<string>(
       'BOOKING_PROJECTION_GROUP_NAME',
     );
@@ -42,24 +43,37 @@ export class BookingProjection {
         groupName,
       );
 
-    source$.subscribe(async (resolvedEvent) => {
-      try {
-        const type = resolvedEvent.type as TableBookingEventType;
-        switch (type) {
-          case 'table-booking-initiated':
-            await this.onTableBookingInitiated(resolvedEvent);
-            break;
-          case 'table-booking-cancelled':
-            await this.onTableBookingCancelled(resolvedEvent);
-            break;
-          case 'table-booking-confirmed':
-            await this.onTableBookingConfirmed(resolvedEvent);
-            break;
-        }
-      } catch (error) {
-        logger.error(error);
+    source$
+      .pipe(
+        groupBy((event) => (event.data as TableBookingEvent['data']).id),
+        mergeMap((group$) =>
+          group$.pipe(concatMap((event) => this.handleEvent(event))),
+        ),
+      )
+      .subscribe();
+  }
+
+  private async handleEvent(resolvedEvent: AcknowledgeableEventStoreEvent) {
+    this.logger.debug(`Handling event: ${resolvedEvent.type}`);
+
+    try {
+      const type = resolvedEvent.type as TableBookingEventType;
+      switch (type) {
+        case 'table-booking-initiated':
+          await this.onTableBookingInitiated(resolvedEvent);
+          break;
+        case 'table-booking-cancelled':
+          await this.onTableBookingCancelled(resolvedEvent);
+          break;
+        case 'table-booking-confirmed':
+          await this.onTableBookingConfirmed(resolvedEvent);
+          break;
+        default:
+          this.logger.warn(`Unhandled event type: ${type}`);
       }
-    });
+    } catch (error) {
+      this.logger.error(error);
+    }
   }
 
   private async onTableBookingInitiated(
@@ -104,6 +118,7 @@ export class BookingProjection {
       .where(eq(bookings.id, eventData.id));
 
     if (bookingResults.length === 0) {
+      this.logger.warn(`Booking not found: ${eventData.id}`);
       await resolvedEvent.nack('retry', 'Booking not found');
       return;
     }
@@ -111,6 +126,11 @@ export class BookingProjection {
     const booking = bookingResults[0];
 
     if (booking.revision + 1 !== resolvedEvent.revision) {
+      this.logger.warn('Booking revision mismatch', {
+        bookingId: eventData.id,
+        currentRevision: booking.revision,
+        eventRevision: resolvedEvent.revision,
+      });
       await resolvedEvent.nack('retry', 'Booking revision mismatch');
       return;
     }
@@ -131,21 +151,27 @@ export class BookingProjection {
   ) {
     const eventData = parseTableLockPlacedEventData(resolvedEvent.data);
 
-    const tableResults = await this.db
+    const bookingResults = await this.db
       .select({
         revision: bookings.revision,
       })
       .from(bookings)
       .where(eq(bookings.id, eventData.id));
 
-    if (tableResults.length === 0) {
+    if (bookingResults.length === 0) {
+      this.logger.warn(`Booking not found: ${eventData.id}`);
       await resolvedEvent.nack('retry', 'Booking not found');
       return;
     }
 
-    const table = tableResults[0];
+    const booking = bookingResults[0];
 
-    if (table.revision + 1 !== resolvedEvent.revision) {
+    if (booking.revision + 1 !== resolvedEvent.revision) {
+      this.logger.warn('Booking revision mismatch', {
+        bookingId: eventData.id,
+        currentRevision: booking.revision,
+        eventRevision: resolvedEvent.revision,
+      });
       await resolvedEvent.nack('retry', 'Booking revision mismatch');
       return;
     }
