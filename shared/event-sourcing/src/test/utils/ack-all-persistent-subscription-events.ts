@@ -1,7 +1,7 @@
 import {
-  concatMap,
   defaultIfEmpty,
   lastValueFrom,
+  mergeMap,
   takeUntil,
   timer,
 } from 'rxjs';
@@ -25,7 +25,7 @@ export const ackAllPersistentSubscriptionEvents = async (
   await lastValueFrom(
     source$.pipe(
       takeUntil(timer(200)),
-      concatMap((event) => event.ack()),
+      mergeMap((event) => event.ack()),
       defaultIfEmpty(null),
     ),
   );

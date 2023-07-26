@@ -1,15 +1,13 @@
-import { retryWithDelay } from '@/test/retry-with-delay';
 import { setupTestingModule } from '@/test/setup-testing-module';
 import { INestApplication } from '@nestjs/common/interfaces';
 import { TestingModule } from '@nestjs/testing';
 import { EVENT_STORE_SERVICE, EventStoreService } from '@rb/event-sourcing';
 import {
   TableAddedEvent,
+  TableBookingConfirmedEvent,
   TableBookingInitiatedEvent,
   TableLockPlacedEvent,
 } from '@rb/events';
-import { TableBookingBaseEvent } from '@rb/events/dist/table-booking/table-booking-base-event';
-import { firstValueFrom, toArray } from 'rxjs';
 import * as request from 'supertest';
 import { v4 as uuid } from 'uuid';
 
@@ -19,7 +17,9 @@ describe('List available booking slots E2E - /booking-slots (GET)', () => {
   let eventStoreService: EventStoreService;
 
   beforeEach(async () => {
-    ({ testingModule, app } = await setupTestingModule());
+    ({ testingModule, app } = await setupTestingModule({
+      disableSagas: true,
+    }));
 
     eventStoreService = app.get<EventStoreService>(EVENT_STORE_SERVICE);
   });
@@ -254,21 +254,16 @@ async function bookSlot({
     ),
   );
 
-  await retryWithDelay(
-    async () => {
-      const tableBooking = eventStoreService.readStream(
-        TableBookingBaseEvent.buildStreamName(bookingId),
-      );
-
-      const events = await firstValueFrom(tableBooking.pipe(toArray()));
-
-      const latestEvent = events[events.length - 1];
-
-      expect(latestEvent.type).toEqual('table-booking-confirmed');
-    },
-    {
-      maxRetries: 4,
-      delay: 1000,
-    },
+  await eventStoreService.publish(
+    new TableBookingConfirmedEvent(
+      {
+        id: bookingId,
+        tableId,
+        timeSlot,
+      },
+      {
+        correlationId,
+      },
+    ),
   );
 }
