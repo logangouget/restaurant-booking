@@ -1,4 +1,4 @@
-import { TableBooking, TimeSlot } from '@/domain/table-booking';
+import { TableBooking } from '@/domain/table-booking';
 import { Inject, Injectable } from '@nestjs/common';
 import { EVENT_STORE_SERVICE, EventStoreService } from '@rb/event-sourcing';
 import { EventStoreEvent } from '@rb/event-sourcing/dist/store/event-store-event';
@@ -24,6 +24,7 @@ import {
 } from '@rb/events/dist/table/table-lock-removed-event';
 import { filter, lastValueFrom, map, toArray } from 'rxjs';
 import { TableBookingEventStoreRepositoryInterface } from './table-booking.event-store.repository.interface';
+import { TimeSlot } from '@/domain/time-slot.value-object';
 
 @Injectable()
 export class TableBookingEventStoreRepository

@@ -13,7 +13,9 @@ describe('Confirm booking E2E - Table booking saga', () => {
   let eventStoreDbService: EventStoreService;
 
   beforeEach(async () => {
-    ({ testingModule, app } = await setupTestingModule());
+    ({ testingModule, app } = await setupTestingModule({
+      disableProjections: true,
+    }));
     eventStoreDbService = app.get<EventStoreService>(EVENT_STORE_SERVICE);
   });
 

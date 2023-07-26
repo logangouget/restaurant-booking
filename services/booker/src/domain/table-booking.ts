@@ -7,11 +7,8 @@ import {
   TableBookingInitiatedEvent,
 } from '@rb/events';
 import { v4 as uuid } from 'uuid';
-
-export interface TimeSlot {
-  from: Date;
-  to: Date;
-}
+import { TimeSlot } from './time-slot.value-object';
+import { InvalidTimeSlotException } from './exceptions';
 
 export class TableBooking extends AggregateRoot<TableBookingEvent> {
   public readonly id: string;
@@ -25,6 +22,10 @@ export class TableBooking extends AggregateRoot<TableBookingEvent> {
   }
 
   initiate(tableId: string, timeSlot: TimeSlot) {
+    if (!timeSlot.isValid()) {
+      throw new InvalidTimeSlotException();
+    }
+
     this.apply(
       new TableBookingInitiatedEvent({
         id: this.id,
@@ -56,7 +57,10 @@ export class TableBooking extends AggregateRoot<TableBookingEvent> {
 
   onTableBookingInitiatedEvent(event: TableBookingInitiatedEvent) {
     this.status = 'initiated';
-    this.timeSlot = event.data.timeSlot;
+    this.timeSlot = new TimeSlot(
+      event.data.timeSlot.from,
+      event.data.timeSlot.to,
+    );
     this.tableId = event.data.tableId;
   }
 

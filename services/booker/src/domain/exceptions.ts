@@ -3,3 +3,9 @@ export class SlotUnavailableException extends Error {
     super(`Slot not available for table ${tableId}`);
   }
 }
+
+export class InvalidTimeSlotException extends Error {
+  constructor() {
+    super(`Invalid time slot`);
+  }
+}

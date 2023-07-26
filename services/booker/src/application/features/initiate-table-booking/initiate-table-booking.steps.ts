@@ -1,12 +1,13 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { loadFeature, defineFeature } from 'jest-cucumber';
 import { InitiateTableBookingHandler } from './initiate-table-booking.handler';
-import { TableBooking, TimeSlot } from '@/domain/table-booking';
+import { TableBooking } from '@/domain/table-booking';
 import {
   TABLE_BOOKING_EVENT_STORE_REPOSITORY_INTERFACE,
   TableBookingEventStoreRepositoryInterface,
 } from '@/infrastructure/repository/event-store/table-booking.event-store.repository.interface';
 import { SlotUnavailableException } from '@/domain/exceptions';
+import { TimeSlot } from '@/domain/time-slot.value-object';
 
 const feature = loadFeature('./initiate-table-booking.feature', {
   loadRelativePath: true,
@@ -72,10 +73,7 @@ defineFeature(feature, (test) => {
   }) => {
     let tableId: string;
     let error: Error;
-    const timeSlot: TimeSlot = {
-      from: new Date(),
-      to: new Date(),
-    };
+    const timeSlot = new TimeSlot(new Date(), new Date());
 
     given(
       /^a table with id "(.*)" and a time slot that is already booked$/,
