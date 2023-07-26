@@ -28,10 +28,9 @@ export class ScheduleTableLockRemovalHandler
 
   async execute(command: ScheduleTableLockRemovalCommand): Promise<void> {
     this.logger.debug(
-      `Scheduling job 'remove-table-lock' for table ${command.tableId}`,
-      {
-        timeSlot: command.timeSlot,
-      },
+      `Scheduling job 'remove-table-lock' for table ${
+        command.tableId
+      } and timeslot ${JSON.stringify(command.timeSlot)}`,
     );
 
     const table = await this.tableEventStoreRepository.findTableById(

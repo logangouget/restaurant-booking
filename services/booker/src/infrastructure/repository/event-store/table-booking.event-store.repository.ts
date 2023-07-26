@@ -9,12 +9,20 @@ import {
   TableBookingEvent,
   TableBookingEventType,
   TableBookingInitiatedEvent,
+  TableEventType,
+  TableLockPlacedEvent,
   parseTableBookingCancelledEventData,
   parseTableBookingConfirmedEventData,
   parseTableBookingInitiatedEventData,
+  parseTableLockPlacedEventData,
 } from '@rb/events';
 import { TableBookingBaseEvent } from '@rb/events/dist/table-booking/table-booking-base-event';
-import { lastValueFrom, toArray } from 'rxjs';
+import { TableBaseEvent } from '@rb/events/dist/table/table-base-event';
+import {
+  TableLockRemovedEvent,
+  parseTableLockRemovedEventData,
+} from '@rb/events/dist/table/table-lock-removed-event';
+import { filter, lastValueFrom, map, toArray } from 'rxjs';
 import { TableBookingEventStoreRepositoryInterface } from './table-booking.event-store.repository.interface';
 
 @Injectable()
@@ -26,61 +34,53 @@ export class TableBookingEventStoreRepository
     private readonly eventStoreDbService: EventStoreService,
   ) {}
 
-  async findBookingsByTimeSlot(
+  async isTableAvailableForTimeSlot(
     tableId: string,
     timeSlot: TimeSlot,
-  ): Promise<TableBooking[]> {
-    const streamName = TableBookingBaseEvent.buildStreamName(tableId);
-
+  ): Promise<boolean> {
+    const streamName = TableBaseEvent.buildStreamName(tableId);
     const streamExists = await this.eventStoreDbService.streamExists(
       streamName,
     );
 
     if (!streamExists) {
-      return [];
+      return true;
     }
 
     const events$ = this.eventStoreDbService.readStream(streamName);
 
-    const resolvedEvents = await lastValueFrom(events$.pipe(toArray()));
+    const tableLockEventsForTimeSlot = await lastValueFrom(
+      events$.pipe(
+        filter((event) => {
+          const eventType = event.type as TableEventType;
+          return (
+            eventType === 'table-lock-placed' ||
+            eventType === 'table-lock-removed'
+          );
+        }),
+        map((event) => this.mapTableEventFromJsonEvent(event)),
+        filter((event) => {
+          return (
+            event.data.timeSlot.from.getTime() === timeSlot.from.getTime() &&
+            event.data.timeSlot.to.getTime() === timeSlot.to.getTime()
+          );
+        }),
+        toArray(),
+      ),
+    );
 
-    if (resolvedEvents.length === 0) {
-      return [];
+    if (tableLockEventsForTimeSlot.length === 0) {
+      return true;
     }
 
-    const mappedEvents = this.mapEventsFromJsonEvents(resolvedEvents);
+    const lastEvent =
+      tableLockEventsForTimeSlot[tableLockEventsForTimeSlot.length - 1];
 
-    const bookingEvents = mappedEvents.reduce(
-      (acc, event) => {
-        if (!acc[event.data.id]) {
-          acc[event.data.id] = [];
-        }
-
-        acc[event.data.id].push(event);
-
-        return acc;
-      },
-      {} as Record<string, TableBookingEvent[]>,
-    );
-
-    const tableBookings = Object.values(bookingEvents).map((bookingEvents) =>
-      TableBooking.fromEventsHistory(bookingEvents),
-    );
-
-    return tableBookings.filter((booking) => {
-      return (
-        booking.status !== 'idle' &&
-        booking.timeSlot.from.getTime() === timeSlot.from.getTime() &&
-        booking.timeSlot.to.getTime() === timeSlot.to.getTime()
-      );
-    });
+    return lastEvent.type === 'table-lock-removed';
   }
 
-  async findBookingByCorrelationId(
-    tableId: string,
-    correlationId: string,
-  ): Promise<TableBooking | null> {
-    const streamName = TableBookingBaseEvent.buildStreamName(tableId);
+  async findBookingById(id: string): Promise<TableBooking | null> {
+    const streamName = TableBookingBaseEvent.buildStreamName(id);
 
     const streamExists = await this.eventStoreDbService.streamExists(
       streamName,
@@ -100,15 +100,7 @@ export class TableBookingEventStoreRepository
 
     const mappedEvents = this.mapEventsFromJsonEvents(resolvedEvents);
 
-    const filteredEvents = mappedEvents.filter((event) => {
-      return event.metadata.correlationId === correlationId;
-    });
-
-    if (filteredEvents.length === 0) {
-      return null;
-    }
-
-    return TableBooking.fromEventsHistory(filteredEvents);
+    return TableBooking.fromEventsHistory(mappedEvents);
   }
 
   async publish(events: TableBookingEvent[]): Promise<void> {
@@ -174,5 +166,33 @@ export class TableBookingEventStoreRepository
           );
       }
     });
+  }
+
+  private mapTableEventFromJsonEvent(resolvedEvent: EventStoreEvent) {
+    switch (resolvedEvent.type as TableEventType) {
+      case 'table-lock-placed': {
+        const data = parseTableLockPlacedEventData(resolvedEvent.data);
+
+        const metadata = resolvedEvent.metadata as JSONMetadata;
+
+        return new TableLockPlacedEvent(data, {
+          correlationId: metadata.$correlationId,
+        });
+      }
+      case 'table-lock-removed': {
+        const data = parseTableLockRemovedEventData(resolvedEvent.data);
+
+        const metadata = resolvedEvent.metadata as JSONMetadata;
+
+        return new TableLockRemovedEvent(data, {
+          correlationId: metadata.$correlationId,
+        });
+      }
+
+      default:
+        throw new Error(
+          `Event ${resolvedEvent.type} not supported by this repository`,
+        );
+    }
   }
 }

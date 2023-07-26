@@ -69,7 +69,7 @@ export class AppModule implements OnModuleDestroy, OnApplicationBootstrap {
       await this.tableProjection.init();
       await this.bookingProjection.init();
     } catch (error) {
-      logger.error(error);
+      logger.error(error, error.stack);
       throw error;
     }
   }

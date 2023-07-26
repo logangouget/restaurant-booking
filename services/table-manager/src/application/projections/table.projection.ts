@@ -30,7 +30,7 @@ export class TableProjection {
   ) {}
 
   async init() {
-    this.logger.debug('Initializing TableProjection');
+    this.logger.log('Initializing TableProjection');
 
     const streamName = '$ce-table';
 
@@ -55,9 +55,10 @@ export class TableProjection {
   }
 
   private async handleEvent(resolvedEvent: AcknowledgeableEventStoreEvent) {
+    this.logger.debug(`Handling event: ${resolvedEvent.type}`);
+
     try {
-      const type = resolvedEvent.type as TableEventType;
-      switch (type) {
+      switch (resolvedEvent.type as TableEventType) {
         case 'table-added':
           await this.onTableAdded(resolvedEvent);
           break;
@@ -71,10 +72,10 @@ export class TableProjection {
           await this.onTableLockRemoved(resolvedEvent);
           break;
         default:
-          this.logger.warn(`Unhandled event type: ${type}`);
+          this.logger.warn(`Unhandled event type: ${resolvedEvent.type}`);
       }
     } catch (error) {
-      this.logger.error(error);
+      this.logger.error(error, error.stack);
     }
   }
 

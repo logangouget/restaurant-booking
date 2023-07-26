@@ -1,7 +1,7 @@
 import { Event, EventMetadata } from "../event";
 
 export abstract class TableBookingBaseEvent<
-  Data extends { tableId: string },
+  Data extends { id: string },
   Type
 > extends Event<Data, Type> {
   static STREAM_PREFIX = "table_booking";
@@ -21,7 +21,7 @@ export abstract class TableBookingBaseEvent<
       data,
       type,
       version,
-      streamName: TableBookingBaseEvent.buildStreamName(data.tableId),
+      streamName: TableBookingBaseEvent.buildStreamName(data.id),
       metadata,
     });
   }

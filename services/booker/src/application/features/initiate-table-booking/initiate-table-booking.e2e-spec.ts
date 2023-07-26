@@ -1,15 +1,19 @@
 import { setupTestingModule } from '@/test/setup-testing-module';
 import { INestApplication } from '@nestjs/common/interfaces';
 import { TestingModule } from '@nestjs/testing';
+import { EVENT_STORE_SERVICE, EventStoreService } from '@rb/event-sourcing';
+import { TableLockPlacedEvent } from '@rb/events';
 import * as request from 'supertest';
 import { v4 as uuidv4 } from 'uuid';
 
 describe('Book table E2E - /bookings/initiate (POST)', () => {
   let testingModule: TestingModule;
   let app: INestApplication;
+  let eventStoreService: EventStoreService;
 
   beforeEach(async () => {
     ({ testingModule, app } = await setupTestingModule());
+    eventStoreService = app.get<EventStoreService>(EVENT_STORE_SERVICE);
   });
 
   afterAll(async () => {
@@ -42,13 +46,12 @@ describe('Book table E2E - /bookings/initiate (POST)', () => {
     };
 
     beforeAll(async () => {
-      await request(app.getHttpServer())
-        .post('/booking/initiate')
-        .send({
-          tableId: tableId,
+      await eventStoreService.publish(
+        new TableLockPlacedEvent({
+          id: tableId,
           timeSlot,
-        })
-        .expect(201);
+        }),
+      );
     });
 
     it('should return 400', async () => {

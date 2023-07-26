@@ -5,11 +5,13 @@ import { EVENT_STORE_SERVICE, EventStoreService } from '@rb/event-sourcing';
 import { AcknowledgeableEventStoreEvent } from '@rb/event-sourcing/dist/store/acknowledgeable-event-store-event';
 import {
   JSONMetadata,
+  TableBookingEventType,
+  TableEventType,
   parseTableBookingCancelledEventData,
   parseTableBookingInitiatedEventData,
   parseTableLockPlacedEventData,
 } from '@rb/events';
-import { concatMap, merge } from 'rxjs';
+import { merge, mergeMap } from 'rxjs';
 import { TableNotFoundError } from '../errors';
 import { PlaceTableLockCommand } from '../features/place-table-lock/place-table-lock.command';
 import { RemoveTableLockCommand } from '../features/remove-table-lock/remove-table-lock.command';
@@ -29,7 +31,7 @@ export class TableLockingSaga {
   async init() {
     const logger = new Logger('TableLockingSaga');
 
-    logger.debug('Initializing TableLockingSaga');
+    logger.log('Initializing TableLockingSaga');
 
     const streamName = '$et-table-booking-initiated';
 
@@ -64,26 +66,27 @@ export class TableLockingSaga {
 
     merge(sources$)
       .pipe(
-        concatMap((events) => events),
-        concatMap((event) => this.handleEvent(event)),
+        mergeMap((events) => events),
+        mergeMap((event) => this.handleEvent(event)),
       )
       .subscribe();
   }
 
   private async handleEvent(resolvedEvent: AcknowledgeableEventStoreEvent) {
     this.logger.debug(`Handling event: ${resolvedEvent.type}`);
-    switch (resolvedEvent.type) {
+
+    switch (resolvedEvent.type as TableEventType | TableBookingEventType) {
       case 'table-booking-initiated':
         await this.onTableBookingInitiated(resolvedEvent);
         break;
       case 'table-lock-placed':
-        await this.onTableLocked(resolvedEvent);
+        await this.onTableLockPlaced(resolvedEvent);
         break;
       case 'table-booking-cancelled':
         await this.onBookingCancelled(resolvedEvent);
         break;
       default:
-        this.logger.debug(`Unhandled event: ${resolvedEvent.type}`);
+        this.logger.warn(`Unhandled event: ${resolvedEvent.type}`);
     }
   }
 
@@ -111,7 +114,7 @@ export class TableLockingSaga {
     await resolvedEvent.ack();
   }
 
-  async onTableLocked(resolvedEvent: AcknowledgeableEventStoreEvent) {
+  async onTableLockPlaced(resolvedEvent: AcknowledgeableEventStoreEvent) {
     const eventData = parseTableLockPlacedEventData(resolvedEvent.data);
 
     const eventMetadata = resolvedEvent.metadata as JSONMetadata;

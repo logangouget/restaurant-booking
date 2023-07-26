@@ -5,10 +5,10 @@ import { EVENT_STORE_SERVICE, EventStoreService } from '@rb/event-sourcing';
 import { AcknowledgeableEventStoreEvent } from '@rb/event-sourcing/dist/store/acknowledgeable-event-store-event';
 import {
   JSONMetadata,
-  parseTableLockPlacedEventData,
-  parseTableLockPlacementFailedEventData,
+  TableEventType,
+  TableLockPlacementFailedEvent,
 } from '@rb/events';
-import { concatMap, merge } from 'rxjs';
+import { merge, mergeMap } from 'rxjs';
 import { CancelTableBookingCommand } from '../features/cancel-table-booking/cancel-table-booking.command';
 import { ConfirmTableBookingCommand } from '../features/confirm-table-booking/confirm-table-booking.command';
 
@@ -49,19 +49,21 @@ export class TableBookingSaga {
 
     merge(sources$)
       .pipe(
-        concatMap((events) => events),
-        concatMap((event) => this.handleEvent(event)),
+        mergeMap((events) => events),
+        mergeMap((event) => this.handleEvent(event)),
       )
       .subscribe();
   }
 
   private async handleEvent(resolvedEvent: AcknowledgeableEventStoreEvent) {
-    const type = resolvedEvent.type;
-
-    this.logger.debug(`Handling event: ${type}`);
+    this.logger.debug(`Handling event: ${resolvedEvent.type}`);
 
     try {
-      switch (type) {
+      switch (
+        resolvedEvent.type as
+          | TableEventType
+          | TableLockPlacementFailedEvent['type']
+      ) {
         case 'table-lock-placed':
           await this.onTableLockPlaced(resolvedEvent);
           break;
@@ -69,25 +71,19 @@ export class TableBookingSaga {
           await this.onTableLockPlacementFailed(resolvedEvent);
           break;
         default:
-          this.logger.warn(`Unhandled event type: ${type}`);
+          this.logger.warn(`Unhandled event type: ${resolvedEvent.type}`);
       }
     } catch (error) {
-      this.logger.error(error);
+      this.logger.error(error, error.stack);
     }
   }
 
   async onTableLockPlacementFailed(
     resolvedEvent: AcknowledgeableEventStoreEvent,
   ) {
-    const eventData = parseTableLockPlacementFailedEventData(
-      resolvedEvent.data,
-    );
     const eventMetadata = resolvedEvent.metadata as JSONMetadata;
 
-    const command = new CancelTableBookingCommand(
-      eventData.tableId,
-      eventMetadata.$correlationId,
-    );
+    const command = new CancelTableBookingCommand(eventMetadata.$correlationId);
 
     await this.commandBus.execute(command);
 
@@ -95,11 +91,9 @@ export class TableBookingSaga {
   }
 
   async onTableLockPlaced(resolvedEvent: AcknowledgeableEventStoreEvent) {
-    const eventData = parseTableLockPlacedEventData(resolvedEvent.data);
     const eventMetadata = resolvedEvent.metadata as JSONMetadata;
 
     const command = new ConfirmTableBookingCommand(
-      eventData.id,
       eventMetadata.$correlationId,
     );
 

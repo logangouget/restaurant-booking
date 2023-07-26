@@ -19,9 +19,9 @@ defineFeature(feature, (test) => {
 
   const mockedTableBookingEventStoreRepository: jest.Mocked<TableBookingEventStoreRepositoryInterface> =
     {
-      findBookingsByTimeSlot: jest.fn(),
+      isTableAvailableForTimeSlot: jest.fn(),
       publish: jest.fn(),
-      findBookingByCorrelationId: jest.fn(),
+      findBookingById: jest.fn(),
     };
 
   beforeAll(async () => {
@@ -41,7 +41,7 @@ defineFeature(feature, (test) => {
 
   test('Confirm table booking', ({ given, when, then }) => {
     let result: TableBooking;
-    let tableId: string;
+    let bookingId: string;
 
     given(
       /^an initiated booking for table "(.*)" from "(.*)" to "(.*)"$/,
@@ -53,19 +53,16 @@ defineFeature(feature, (test) => {
         });
         booking.commit();
 
-        tableId = booking.tableId;
+        bookingId = booking.id;
 
-        mockedTableBookingEventStoreRepository.findBookingByCorrelationId.mockResolvedValueOnce(
+        mockedTableBookingEventStoreRepository.findBookingById.mockResolvedValueOnce(
           booking,
         );
       },
     );
 
     when('booking is going to be confirmed', async () => {
-      const command = new ConfirmTableBookingCommand(
-        tableId,
-        'x-correlation-id',
-      );
+      const command = new ConfirmTableBookingCommand(bookingId);
       result = await confirmTableBooking.execute(command);
     });
 
@@ -80,7 +77,7 @@ defineFeature(feature, (test) => {
     given(
       /^a non-existing booking for table "(.*)" from "(.*)" to "(.*)"$/,
       () => {
-        mockedTableBookingEventStoreRepository.findBookingByCorrelationId.mockResolvedValueOnce(
+        mockedTableBookingEventStoreRepository.findBookingById.mockResolvedValueOnce(
           null,
         );
       },
@@ -89,8 +86,7 @@ defineFeature(feature, (test) => {
     when('booking is going to be confirmed', async () => {
       try {
         const command = new ConfirmTableBookingCommand(
-          'non-existing-table-id',
-          'x-correlation-id',
+          'non-existing-booking-id',
         );
         await confirmTableBooking.execute(command);
       } catch (err) {

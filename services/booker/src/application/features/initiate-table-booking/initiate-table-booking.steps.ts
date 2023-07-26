@@ -19,9 +19,9 @@ defineFeature(feature, (test) => {
 
   const mockedTableBookingEventStoreRepository: jest.Mocked<TableBookingEventStoreRepositoryInterface> =
     {
-      findBookingsByTimeSlot: jest.fn(),
+      isTableAvailableForTimeSlot: jest.fn(),
       publish: jest.fn(),
-      findBookingByCorrelationId: jest.fn(),
+      findBookingById: jest.fn(),
     };
 
   beforeAll(async () => {
@@ -39,23 +39,16 @@ defineFeature(feature, (test) => {
     );
   });
 
-  test('Initiate booking', ({ given, and, when, then }) => {
+  test('Initiate booking', ({ given, when, then }) => {
     let tableId: string;
 
-    given('I am a client', () => {
-      // No implementation needed
+    given(/^a table with id "(.*)" and a free time slot$/, (id: string) => {
+      tableId = id;
+
+      mockedTableBookingEventStoreRepository.isTableAvailableForTimeSlot.mockResolvedValueOnce(
+        true,
+      );
     });
-
-    and(
-      /^there is a table with id "(.*)" and a free time slot$/,
-      (id: string) => {
-        tableId = id;
-
-        mockedTableBookingEventStoreRepository.findBookingsByTimeSlot.mockResolvedValueOnce(
-          [],
-        );
-      },
-    );
 
     when('I book this table', async () => {
       result = await bookTable.execute({
@@ -74,7 +67,6 @@ defineFeature(feature, (test) => {
 
   test('Initiate booking for a table that is already booked', ({
     given,
-    and,
     when,
     then,
   }) => {
@@ -85,20 +77,13 @@ defineFeature(feature, (test) => {
       to: new Date(),
     };
 
-    given('I am a client', () => {
-      // No implementation needed
-    });
-
-    and(
-      /^there is a table with id "(.*)" and a time slot that is already booked$/,
+    given(
+      /^a table with id "(.*)" and a time slot that is already booked$/,
       (id: string) => {
         tableId = id;
 
-        const booking = new TableBooking('1');
-        booking.initiate('1', timeSlot);
-
-        mockedTableBookingEventStoreRepository.findBookingsByTimeSlot.mockResolvedValueOnce(
-          [booking],
+        mockedTableBookingEventStoreRepository.isTableAvailableForTimeSlot.mockResolvedValueOnce(
+          false,
         );
       },
     );

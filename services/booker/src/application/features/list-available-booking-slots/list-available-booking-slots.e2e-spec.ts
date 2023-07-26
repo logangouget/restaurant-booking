@@ -108,7 +108,6 @@ describe('List available booking slots E2E - /booking-slots (GET)', () => {
   describe('When the morning slot for one day is not available', () => {
     const tableId = uuid();
     const bookingId = uuid();
-    const correlationId = uuid();
 
     const timeSlotFromDate = new Date('2023-01-01T12:00Z');
     const timeSlotToDate = new Date('2023-01-01T14:00Z');
@@ -119,12 +118,12 @@ describe('List available booking slots E2E - /booking-slots (GET)', () => {
     };
 
     beforeEach(async () => {
-      await bookMorningSlot({
+      await bookSlot({
         eventStoreService,
         bookingId,
         tableId,
         timeSlot,
-        correlationId,
+        correlationId: bookingId,
       });
     });
 
@@ -159,7 +158,6 @@ describe('List available booking slots E2E - /booking-slots (GET)', () => {
   describe('When the evening slot for one is not available', () => {
     const tableId = uuid();
     const bookingId = uuid();
-    const correlationId = uuid();
 
     const timeSlotFromDate = new Date('2023-01-01T19:00Z');
     const timeSlotToDate = new Date('2023-01-01T21:00Z');
@@ -170,12 +168,12 @@ describe('List available booking slots E2E - /booking-slots (GET)', () => {
     };
 
     beforeEach(async () => {
-      await bookMorningSlot({
+      await bookSlot({
         eventStoreService,
         bookingId,
         tableId,
         timeSlot,
-        correlationId,
+        correlationId: bookingId,
       });
     });
 
@@ -208,7 +206,7 @@ describe('List available booking slots E2E - /booking-slots (GET)', () => {
   });
 });
 
-async function bookMorningSlot({
+async function bookSlot({
   eventStoreService,
   tableId,
   bookingId,
@@ -259,7 +257,7 @@ async function bookMorningSlot({
   await retryWithDelay(
     async () => {
       const tableBooking = eventStoreService.readStream(
-        TableBookingBaseEvent.buildStreamName(tableId),
+        TableBookingBaseEvent.buildStreamName(bookingId),
       );
 
       const events = await firstValueFrom(tableBooking.pipe(toArray()));
