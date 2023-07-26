@@ -3,10 +3,11 @@ import { clearTestData } from './clear-test-data';
 import { mockLogger } from './mock-logger';
 import { mockConfigServiceGet } from './mocked-config-service';
 import { Test, TestingModule } from '@nestjs/testing';
-import { INestApplication } from '@nestjs/common';
+import { INestApplication, Logger } from '@nestjs/common';
 import { TableProjection } from '@/application/projections/table.projection';
 import { TableBookingSaga } from '@/application/sagas/table-booking.saga';
 import { BookingProjection } from '@/application/projections/booking.projection';
+import { ConfigService } from '@nestjs/config';
 
 const createSetupFunction = () => {
   let cached: {
@@ -45,8 +46,16 @@ const createSetupFunction = () => {
 
       const app = testingModule.createNestApplication();
 
+      const configService = app.get(ConfigService);
+
+      const ENABLE_TEST_LOGS = configService.get('ENABLE_TEST_LOGS');
+
+      if (ENABLE_TEST_LOGS) {
+        app.useLogger(new Logger());
+      }
+
       mockConfigServiceGet(app);
-      mockLogger();
+      mockLogger(app);
 
       await clearTestData(app);
 

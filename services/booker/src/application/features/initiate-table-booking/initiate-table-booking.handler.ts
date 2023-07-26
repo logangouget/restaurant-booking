@@ -7,6 +7,7 @@ import {
 import { Inject } from '@nestjs/common';
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
 import { InitiateTableBookingCommand } from './initiate-table-booking.command';
+import { TimeSlot } from '@/domain/time-slot.value-object';
 
 @CommandHandler(InitiateTableBookingCommand)
 export class InitiateTableBookingHandler
@@ -21,7 +22,10 @@ export class InitiateTableBookingHandler
     const tableAvailable =
       await this.tableBookingEventStoreRepository.isTableAvailableForTimeSlot(
         command.tableId,
-        command.timeSlot,
+        new TimeSlot(
+          new Date(command.timeSlot.from),
+          new Date(command.timeSlot.to),
+        ),
       );
 
     if (!tableAvailable) {
@@ -30,7 +34,13 @@ export class InitiateTableBookingHandler
 
     const tableBooking = new TableBooking();
 
-    tableBooking.initiate(command.tableId, command.timeSlot);
+    tableBooking.initiate(
+      command.tableId,
+      new TimeSlot(
+        new Date(command.timeSlot.from),
+        new Date(command.timeSlot.to),
+      ),
+    );
 
     const tableBookingEvents = tableBooking.getUncommittedEvents();
 

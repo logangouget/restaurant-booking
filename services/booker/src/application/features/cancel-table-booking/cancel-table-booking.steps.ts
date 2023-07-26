@@ -8,6 +8,7 @@ import { CancelTableBookingHandler } from './cancel-table-booking.handler';
 import { TableBooking } from '@/domain/table-booking';
 import { CancelTableBookingCommand } from './cancel-table-booking.command';
 import { TableBookingNotFoundError } from '@/application/errors';
+import { TimeSlot } from '@/domain/time-slot.value-object';
 
 const feature = loadFeature('./cancel-table-booking.feature', {
   loadRelativePath: true,
@@ -47,10 +48,10 @@ defineFeature(feature, (test) => {
       /^an initiated booking for table "(.*)" from "(.*)" to "(.*)"$/,
       (tableId: string, bookingFrom: string, bookingTo: string) => {
         const booking = new TableBooking();
-        booking.initiate(tableId, {
-          from: new Date(bookingFrom),
-          to: new Date(bookingTo),
-        });
+        booking.initiate(
+          tableId,
+          new TimeSlot(new Date(bookingFrom), new Date(bookingTo)),
+        );
         booking.commit();
 
         bookingId = booking.id;

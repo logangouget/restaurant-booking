@@ -10,6 +10,8 @@ import {
 import { Inject } from '@nestjs/common';
 import { sql } from 'drizzle-orm';
 import { bookings, tables } from '@/infrastructure/repository/database/schemas';
+import { TimeSlot } from '@/domain/time-slot.value-object';
+import { timeSlotConfiguration } from '@/domain/timeslot-configuration';
 
 @QueryHandler(ListAvailableBookingSlotsQuery)
 export class ListAvailableBookingSlotsHandler
@@ -26,6 +28,21 @@ export class ListAvailableBookingSlotsHandler
     const startDate = query.startDate.toISOString().split('T')[0];
     const endDate = query.endDate.toISOString().split('T')[0];
 
+    const config = {
+      morningStartTime: sql.raw(
+        `'${timeSlotConfiguration.morning.from.hours}:${timeSlotConfiguration.morning.from.minutes}'::time`,
+      ),
+      morningEndTime: sql.raw(
+        `'${timeSlotConfiguration.morning.to.hours}:${timeSlotConfiguration.morning.to.minutes}'::time`,
+      ),
+      eveningStartTime: sql.raw(
+        `'${timeSlotConfiguration.evening.from.hours}:${timeSlotConfiguration.evening.from.minutes}'::time`,
+      ),
+      eveningEndTime: sql.raw(
+        `'${timeSlotConfiguration.evening.to.hours}:${timeSlotConfiguration.evening.to.minutes}'::time`,
+      ),
+    };
+
     const rows: Array<{
       day: string;
       start_time: string;
@@ -41,10 +58,10 @@ export class ListAvailableBookingSlotsHandler
       time_slots AS (
         SELECT
           generate_series(start_date, end_date, INTERVAL '1 day') AS day,
-          '12:00'::time AS morning_start,
-          '14:00'::time AS morning_end,
-          '19:00'::time AS evening_start,
-          '21:00'::time AS evening_end
+           ${config.morningStartTime} AS morning_start,
+          ${config.morningEndTime} AS morning_end,
+          ${config.eveningStartTime} AS evening_start,
+          ${config.eveningEndTime} AS evening_end
         FROM
           date_range
       ),

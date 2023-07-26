@@ -9,8 +9,8 @@ import {
 } from '@rb/events';
 import { TableBookingBaseEvent } from '@rb/events/dist/table-booking/table-booking-base-event';
 import { filter, firstValueFrom, take } from 'rxjs';
-import { v4 as uuid } from 'uuid';
 import * as request from 'supertest';
+import { v4 as uuid } from 'uuid';
 
 describe('Cancel table booking E2E', () => {
   let testingModule: TestingModule;
@@ -18,7 +18,9 @@ describe('Cancel table booking E2E', () => {
   let eventStoreDbService: EventStoreService;
 
   beforeEach(async () => {
-    ({ testingModule, app } = await setupTestingModule());
+    ({ testingModule, app } = await setupTestingModule({
+      disableProjections: true,
+    }));
 
     eventStoreDbService = app.get<EventStoreService>(EVENT_STORE_SERVICE);
   });
@@ -82,7 +84,7 @@ describe('Cancel table booking E2E', () => {
             to: timeSlot.to.toISOString(),
           },
         });
-      }, 10000);
+      });
     });
   });
 
