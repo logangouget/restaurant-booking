@@ -7,6 +7,8 @@ import {
 import { Inject } from '@nestjs/common';
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
 import { RemoveTableLockCommand } from './remove-table-lock.command';
+import { InjectQueue } from '@nestjs/bull';
+import { Queue } from 'bullmq';
 
 @CommandHandler(RemoveTableLockCommand)
 export class RemoveTableLockHandler
@@ -15,6 +17,8 @@ export class RemoveTableLockHandler
   constructor(
     @Inject(TABLE_EVENT_STORE_REPOSITORY_INTERFACE)
     private readonly tableEventStoreRepository: TableEventStoreRepositoryInterface,
+    @InjectQueue('remove-table-lock')
+    private readonly removeTableLockQueue: Queue,
   ) {}
 
   async execute(command: RemoveTableLockCommand): Promise<Table> {
@@ -35,6 +39,14 @@ export class RemoveTableLockHandler
 
     for (const event of tableEvents) {
       event.setCorrelationId(command.correlationId);
+    }
+
+    const scheduledJob = await this.removeTableLockQueue.getJob(
+      command.correlationId,
+    );
+
+    if (scheduledJob) {
+      await scheduledJob.remove();
     }
 
     await this.tableEventStoreRepository.publish(tableEvents);
