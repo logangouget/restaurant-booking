@@ -24,7 +24,7 @@ export const ackAllPersistentSubscriptionEvents = async (
 
   await lastValueFrom(
     source$.pipe(
-      takeUntil(timer(200)),
+      takeUntil(timer(500)),
       mergeMap((event) => event.ack()),
       defaultIfEmpty(null),
     ),

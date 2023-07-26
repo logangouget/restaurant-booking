@@ -55,8 +55,8 @@ defineFeature(feature, (test) => {
       result = await bookTable.execute({
         tableId,
         timeSlot: {
-          from: new Date(),
-          to: new Date(),
+          from: new Date('2023-01-01T12:00'),
+          to: new Date('2023-01-01T14:00'),
         },
       });
     });

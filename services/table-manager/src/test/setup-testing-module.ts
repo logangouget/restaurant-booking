@@ -1,9 +1,12 @@
 import { AppModule } from '@/app.module';
-import { INestApplication } from '@nestjs/common';
+import { INestApplication, Logger } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { clearTestData } from './clear-test-data';
 import { mockConfigServiceGet } from './mocked-config-service';
 import { mockLogger } from './mock-logger';
+import { TableProjection } from '@/application/projections/table.projection';
+import { TableLockingSaga } from '@/application/sagas/table-locking.saga';
+import { ConfigService } from '@nestjs/config';
 
 const createSetupFunction = () => {
   let cached: {
@@ -11,19 +14,44 @@ const createSetupFunction = () => {
     app: INestApplication;
   } | null = null;
 
-  return async (): Promise<{
+  return async (options?: {
+    disableProjections?: boolean;
+    disableSagas?: boolean;
+  }): Promise<{
     testingModule: TestingModule;
     app: INestApplication;
   }> => {
     if (!cached) {
-      const testingModule = await Test.createTestingModule({
+      const testingModuleBuilder = await Test.createTestingModule({
         imports: [AppModule],
-      }).compile();
+      });
+
+      if (options?.disableProjections) {
+        testingModuleBuilder.overrideProvider(TableProjection).useValue({
+          init: jest.fn(),
+        });
+      }
+
+      if (options?.disableSagas) {
+        testingModuleBuilder.overrideProvider(TableLockingSaga).useValue({
+          init: jest.fn(),
+        });
+      }
+
+      const testingModule = await testingModuleBuilder.compile();
 
       const app = testingModule.createNestApplication();
 
+      const configService = app.get(ConfigService);
+
+      const ENABLE_TEST_LOGS = configService.get('ENABLE_TEST_LOGS');
+
+      if (ENABLE_TEST_LOGS) {
+        app.useLogger(new Logger());
+      }
+
       mockConfigServiceGet(app);
-      mockLogger();
+      mockLogger(app);
 
       await clearTestData(app);
 

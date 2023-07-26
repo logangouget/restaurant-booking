@@ -9,7 +9,9 @@ describe('Add table E2E - /tables (POST)', () => {
   let app: INestApplication;
 
   beforeEach(async () => {
-    ({ testingModule, app } = await setupTestingModule());
+    ({ testingModule, app } = await setupTestingModule({
+      disableProjections: true,
+    }));
   });
 
   afterAll(async () => {

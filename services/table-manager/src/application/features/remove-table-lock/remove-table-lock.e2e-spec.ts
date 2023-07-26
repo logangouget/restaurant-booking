@@ -19,7 +19,9 @@ describe('Remove table lock E2E - Table locking saga', () => {
   let removeTableLockQueue: Queue;
 
   beforeEach(async () => {
-    ({ testingModule, app } = await setupTestingModule());
+    ({ testingModule, app } = await setupTestingModule({
+      disableProjections: true,
+    }));
 
     eventStoreDbService = app.get<EventStoreService>(EVENT_STORE_SERVICE);
     tableEventStoreRepository = app.get<TableEventStoreRepository>(

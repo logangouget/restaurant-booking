@@ -12,6 +12,7 @@ import { defineFeature, loadFeature } from 'jest-cucumber';
 import { RemoveTableLockCommand } from './remove-table-lock.command';
 import { RemoveTableLockHandler } from './remove-table-lock.handler';
 import { ScheduleTableLockRemovalHandler } from './schedule-table-lock-removal.handler';
+import { getQueueToken } from '@nestjs/bull';
 
 const feature = loadFeature('./remove-table-lock.feature', {
   loadRelativePath: true,
@@ -30,6 +31,9 @@ defineFeature(feature, (test) => {
 
   const mockedQueue = {
     add: jest.fn(),
+    getJob: jest.fn().mockResolvedValue({
+      remove: jest.fn(),
+    }),
   };
 
   beforeAll(async () => {
@@ -40,6 +44,10 @@ defineFeature(feature, (test) => {
         {
           provide: TABLE_EVENT_STORE_REPOSITORY_INTERFACE,
           useValue: mockedTableEventStoreRepository,
+        },
+        {
+          provide: getQueueToken('remove-table-lock'),
+          useValue: mockedQueue,
         },
       ],
     }).compile();
@@ -98,6 +106,7 @@ defineFeature(feature, (test) => {
         },
         {
           delay: expect.any(Number),
+          jobId: expect.any(String),
         },
       );
     });
