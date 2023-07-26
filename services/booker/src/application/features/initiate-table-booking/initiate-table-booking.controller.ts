@@ -56,6 +56,7 @@ export class InitiateTableBookingController {
       if (err instanceof SlotUnavailableException) {
         throw new ConflictException(err.message);
       }
+      throw err;
     }
   }
 }

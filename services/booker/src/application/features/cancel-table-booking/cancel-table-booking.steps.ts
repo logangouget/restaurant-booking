@@ -19,9 +19,9 @@ defineFeature(feature, (test) => {
 
   const mockedTableBookingEventStoreRepository: jest.Mocked<TableBookingEventStoreRepositoryInterface> =
     {
-      findBookingsByTimeSlot: jest.fn(),
+      isTableAvailableForTimeSlot: jest.fn(),
       publish: jest.fn(),
-      findBookingByCorrelationId: jest.fn(),
+      findBookingById: jest.fn(),
     };
 
   beforeAll(async () => {
@@ -41,7 +41,7 @@ defineFeature(feature, (test) => {
 
   test('Cancel table booking', ({ given, when, then }) => {
     let result: TableBooking;
-    let tableId: string;
+    let bookingId: string;
 
     given(
       /^an initiated booking for table "(.*)" from "(.*)" to "(.*)"$/,
@@ -53,9 +53,9 @@ defineFeature(feature, (test) => {
         });
         booking.commit();
 
-        tableId = booking.tableId;
+        bookingId = booking.id;
 
-        mockedTableBookingEventStoreRepository.findBookingByCorrelationId.mockResolvedValueOnce(
+        mockedTableBookingEventStoreRepository.findBookingById.mockResolvedValueOnce(
           booking,
         );
       },
@@ -63,7 +63,7 @@ defineFeature(feature, (test) => {
 
     when('booking is going to be cancelled', async () => {
       result = await cancelTableBooking.execute(
-        new CancelTableBookingCommand(tableId, 'x-correlation-id'),
+        new CancelTableBookingCommand(bookingId),
       );
     });
 
@@ -78,7 +78,7 @@ defineFeature(feature, (test) => {
     given(
       /^a non-existing booking for table "(.*)" from "(.*)" to "(.*)"$/,
       () => {
-        mockedTableBookingEventStoreRepository.findBookingByCorrelationId.mockResolvedValueOnce(
+        mockedTableBookingEventStoreRepository.findBookingById.mockResolvedValueOnce(
           null,
         );
       },
@@ -87,10 +87,7 @@ defineFeature(feature, (test) => {
     when('booking is going to be cancelled', async () => {
       try {
         await cancelTableBooking.execute(
-          new CancelTableBookingCommand(
-            'non-existing-table-id',
-            'x-correlation-id',
-          ),
+          new CancelTableBookingCommand('non-existing-booking-id'),
         );
       } catch (err) {
         error = err;

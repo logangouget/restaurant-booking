@@ -3,14 +3,16 @@ import { INestApplication } from '@nestjs/common';
 import { TestingModule } from '@nestjs/testing';
 import { EVENT_STORE_SERVICE, EventStoreService } from '@rb/event-sourcing';
 import {
+  TableBookingConfirmedEvent,
   TableBookingInitiatedEvent,
   TableLockPlacementFailedEvent,
 } from '@rb/events';
 import { TableBookingBaseEvent } from '@rb/events/dist/table-booking/table-booking-base-event';
 import { filter, firstValueFrom, take } from 'rxjs';
 import { v4 as uuid } from 'uuid';
+import * as request from 'supertest';
 
-describe('Cancel table booking - Table booking sage', () => {
+describe('Cancel table booking E2E', () => {
   let testingModule: TestingModule;
   let app: INestApplication;
   let eventStoreDbService: EventStoreService;
@@ -25,60 +27,116 @@ describe('Cancel table booking - Table booking sage', () => {
     await testingModule.close();
   });
 
-  describe('When a booking is initiated and there is a lock failure', () => {
-    const tableId = uuid();
-    const bookingId = uuid();
-    const correlationId = uuid();
-    const timeSlot = {
-      from: new Date(),
-      to: new Date(),
-    };
+  describe('From table locking saga', () => {
+    describe('When a booking is initiated and there is a lock failure', () => {
+      const tableId = uuid();
+      const bookingId = uuid();
+      const timeSlot = {
+        from: new Date(),
+        to: new Date(),
+      };
 
-    beforeEach(async () => {
-      const bookingInitiatedEvent = new TableBookingInitiatedEvent(
-        {
-          tableId: tableId,
-          id: bookingId,
-          timeSlot,
-        },
-        {
-          correlationId,
-        },
-      );
-
-      await eventStoreDbService.publish(bookingInitiatedEvent);
-
-      const tableLockFailureEvent = new TableLockPlacementFailedEvent(
-        tableId,
-        timeSlot,
-        'Table lock failure',
-        correlationId,
-      );
-
-      await eventStoreDbService.publish(tableLockFailureEvent);
-    });
-
-    it('should cancel the booking', async () => {
-      const source$ =
-        await eventStoreDbService.initPersistentSubscriptionToStream(
-          TableBookingBaseEvent.buildStreamName(tableId),
-          `table-${tableId}-booking-confirmation`,
+      beforeEach(async () => {
+        const bookingInitiatedEvent = new TableBookingInitiatedEvent(
+          {
+            tableId: tableId,
+            id: bookingId,
+            timeSlot,
+          },
+          {
+            correlationId: bookingId,
+          },
         );
 
-      const tableBookingCancelledEvent = await firstValueFrom(
-        source$.pipe(
-          filter((event) => event.type === 'table-booking-cancelled'),
-          take(1),
-        ),
-      );
+        await eventStoreDbService.publish(bookingInitiatedEvent);
 
-      expect(tableBookingCancelledEvent.data).toEqual({
-        id: bookingId,
-        tableId,
-        timeSlot: {
-          from: timeSlot.from.toISOString(),
-          to: timeSlot.to.toISOString(),
-        },
+        const tableLockFailureEvent = new TableLockPlacementFailedEvent(
+          tableId,
+          timeSlot,
+          'Table lock failure',
+          bookingId,
+        );
+
+        await eventStoreDbService.publish(tableLockFailureEvent);
+      });
+
+      it('should cancel the booking', async () => {
+        const source$ =
+          await eventStoreDbService.initPersistentSubscriptionToStream(
+            TableBookingBaseEvent.buildStreamName(bookingId),
+            `booking-${bookingId}-booking-confirmation`,
+          );
+
+        const tableBookingCancelledEvent = await firstValueFrom(
+          source$.pipe(
+            filter((event) => event.type === 'table-booking-cancelled'),
+            take(1),
+          ),
+        );
+
+        expect(tableBookingCancelledEvent.data).toEqual({
+          id: bookingId,
+          tableId,
+          timeSlot: {
+            from: timeSlot.from.toISOString(),
+            to: timeSlot.to.toISOString(),
+          },
+        });
+      }, 10000);
+    });
+  });
+
+  describe('From cancel route', () => {
+    describe('when booking is not found', () => {
+      it('should return 404', async () => {
+        const bookingId = uuid();
+
+        await request(app.getHttpServer())
+          .post(`/bookings/${bookingId}/cancel`)
+          .expect(404);
+      });
+    });
+
+    describe('When a booking is confirmed cancel route is called', () => {
+      const tableId = uuid();
+      const bookingId = uuid();
+      const timeSlot = {
+        from: new Date(),
+        to: new Date(),
+      };
+
+      beforeEach(async () => {
+        const bookingInitiatedEvent = new TableBookingInitiatedEvent(
+          {
+            tableId: tableId,
+            id: bookingId,
+            timeSlot,
+          },
+          {
+            correlationId: bookingId,
+          },
+        );
+
+        await eventStoreDbService.publish(bookingInitiatedEvent);
+
+        const bookingConfirmedEvent = new TableBookingConfirmedEvent(
+          {
+            id: bookingId,
+            tableId,
+            timeSlot,
+          },
+          {
+            correlationId: bookingId,
+          },
+        );
+
+        await eventStoreDbService.publish(bookingConfirmedEvent);
+      });
+
+      it('should cancel the booking', async () => {
+        await request(app.getHttpServer())
+          .post(`/bookings/${bookingId}/cancel`)
+          .expect(200);
       });
     });
   });

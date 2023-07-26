@@ -57,8 +57,7 @@ export class BookingProjection {
     this.logger.debug(`Handling event: ${resolvedEvent.type}`);
 
     try {
-      const type = resolvedEvent.type as TableBookingEventType;
-      switch (type) {
+      switch (resolvedEvent.type as TableBookingEventType) {
         case 'table-booking-initiated':
           await this.onTableBookingInitiated(resolvedEvent);
           break;
@@ -69,10 +68,10 @@ export class BookingProjection {
           await this.onTableBookingConfirmed(resolvedEvent);
           break;
         default:
-          this.logger.warn(`Unhandled event type: ${type}`);
+          this.logger.warn(`Unhandled event type: ${resolvedEvent.type}`);
       }
     } catch (error) {
-      this.logger.error(error);
+      this.logger.error(error, error.stack);
     }
   }
 

@@ -4,11 +4,11 @@ import { ShowBookingQuery } from './show-booking.query';
 import { TableBookingNotFoundError } from '@/application/errors';
 import { ApiProperty, ApiResponse } from '@nestjs/swagger';
 import { ShowBookingResponse } from './dto/show-booking.response';
-@Controller('bookings')
+@Controller()
 export class ShowBookingController {
   constructor(private readonly queryBus: QueryBus) {}
 
-  @Get(':id')
+  @Get('bookings/:id')
   @ApiProperty({
     description: 'Show a booking',
     type: ShowBookingResponse,

@@ -5,13 +5,10 @@ export const TABLE_BOOKING_EVENT_STORE_REPOSITORY_INTERFACE =
   'TABLE_BOOKING_EVENT_STORE_REPOSITORY_INTERFACE';
 
 export interface TableBookingEventStoreRepositoryInterface {
-  findBookingsByTimeSlot(
+  isTableAvailableForTimeSlot(
     tableId: string,
     timeSlot: TimeSlot,
-  ): Promise<TableBooking[]>;
-  findBookingByCorrelationId(
-    tableId: string,
-    correlationId: string,
-  ): Promise<TableBooking | null>;
+  ): Promise<boolean>;
+  findBookingById(id: string): Promise<TableBooking | null>;
   publish(events: TableBookingEvent[]): Promise<void>;
 }

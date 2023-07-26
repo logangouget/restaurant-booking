@@ -14,20 +14,18 @@ export class RemoveTableLockJobProcessor {
   @OnQueueFailed()
   onQueueFailed(job: Job<RemoveTableLockJobPayload>) {
     this.logger.error(
-      `Job 'remove-table-lock' failed for table ${job.data.tableId}`,
-      {
-        timeSlot: job.data.timeSlot,
-      },
+      `Job 'remove-table-lock' failed for table ${
+        job.data.tableId
+      } and timeslot ${JSON.stringify(job.data.timeSlot)}`,
     );
   }
 
   @Process('remove-table-lock')
   async removeTableLock(job: Job<RemoveTableLockJobPayload>) {
     this.logger.debug(
-      `Processing job 'remove-table-lock' for table ${job.data.tableId}`,
-      {
-        timeSlot: job.data.timeSlot,
-      },
+      `Processing job 'remove-table-lock' for table ${
+        job.data.tableId
+      } and timeslot  ${JSON.stringify(job.data.timeSlot)}`,
     );
 
     await this.commandBus.execute(

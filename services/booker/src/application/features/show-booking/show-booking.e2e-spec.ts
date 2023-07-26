@@ -47,7 +47,6 @@ describe('Show booking E2E - /booking/${bookingId} (GET)', () => {
   describe('When booking exists', () => {
     const tableId = uuid();
     const bookingId = uuid();
-    const correlationId = uuid();
 
     const timeSlotFromDate = new Date('2023-01-01T12:00Z');
     const timeSlotToDate = new Date('2023-01-01T14:00Z');
@@ -63,7 +62,7 @@ describe('Show booking E2E - /booking/${bookingId} (GET)', () => {
         bookingId,
         tableId,
         timeSlot,
-        correlationId,
+        correlationId: bookingId,
       });
     });
 
@@ -144,7 +143,7 @@ async function bookTable({
   await retryWithDelay(
     async () => {
       const tableBooking = eventStoreService.readStream(
-        TableBookingBaseEvent.buildStreamName(tableId),
+        TableBookingBaseEvent.buildStreamName(bookingId),
       );
 
       const events = await firstValueFrom(tableBooking.pipe(toArray()));

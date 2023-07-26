@@ -24,7 +24,6 @@ describe('Confirm booking E2E - Table booking saga', () => {
   describe('When a table is locked and a booking is initiated', () => {
     const tableId = uuid();
     const bookingId = uuid();
-    const correlationId = uuid();
     const timeSlot = {
       from: new Date(),
       to: new Date(),
@@ -38,7 +37,7 @@ describe('Confirm booking E2E - Table booking saga', () => {
           timeSlot,
         },
         {
-          correlationId,
+          correlationId: bookingId,
         },
       );
 
@@ -50,7 +49,7 @@ describe('Confirm booking E2E - Table booking saga', () => {
           timeSlot,
         },
         {
-          correlationId,
+          correlationId: bookingId,
         },
       );
 
@@ -60,8 +59,8 @@ describe('Confirm booking E2E - Table booking saga', () => {
     it('should confirm the booking', async () => {
       const source$ =
         await eventStoreDbService.initPersistentSubscriptionToStream(
-          TableBookingBaseEvent.buildStreamName(tableId),
-          `table-${tableId}-booking-confirmation`,
+          TableBookingBaseEvent.buildStreamName(bookingId),
+          `booking-${bookingId}-booking-confirmation`,
         );
 
       const tableBookingConfirmedEvent = await firstValueFrom(

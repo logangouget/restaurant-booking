@@ -18,17 +18,12 @@ export class CancelTableBookingHandler
   ) {}
 
   async execute(command: CancelTableBookingCommand): Promise<TableBooking> {
-    const tableBooking =
-      await this.tableBookingRepository.findBookingByCorrelationId(
-        command.tableId,
-        command.correlationId,
-      );
+    const tableBooking = await this.tableBookingRepository.findBookingById(
+      command.bookingId,
+    );
 
     if (!tableBooking) {
-      throw new TableBookingNotFoundError(
-        command.tableId,
-        command.correlationId,
-      );
+      throw new TableBookingNotFoundError(command.bookingId);
     }
 
     tableBooking.cancel();
@@ -36,7 +31,7 @@ export class CancelTableBookingHandler
     const events = tableBooking.getUncommittedEvents();
 
     for (const event of events) {
-      event.setCorrelationId(command.correlationId);
+      event.setCorrelationId(command.bookingId);
     }
 
     await this.tableBookingRepository.publish(events);

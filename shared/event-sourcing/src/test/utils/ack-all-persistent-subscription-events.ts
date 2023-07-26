@@ -1,4 +1,10 @@
-import { takeUntil, timer } from 'rxjs';
+import {
+  concatMap,
+  defaultIfEmpty,
+  lastValueFrom,
+  takeUntil,
+  timer,
+} from 'rxjs';
 import { EventStoreDbService } from 'src/store';
 
 export const ackAllPersistentSubscriptionEvents = async (
@@ -16,19 +22,11 @@ export const ackAllPersistentSubscriptionEvents = async (
     groupName,
   );
 
-  return new Promise<void>((resolve, reject) => {
-    const subscription = source$.pipe(takeUntil(timer(500))).subscribe({
-      next: async (event) => {
-        await event.ack();
-      },
-      error: (error) => {
-        subscription.unsubscribe();
-        reject(error);
-      },
-      complete: () => {
-        subscription.unsubscribe();
-        resolve();
-      },
-    });
-  });
+  await lastValueFrom(
+    source$.pipe(
+      takeUntil(timer(200)),
+      concatMap((event) => event.ack()),
+      defaultIfEmpty(null),
+    ),
+  );
 };
