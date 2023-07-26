@@ -1,17 +1,24 @@
+import { retryWithDelay } from '@/test/retry-with-delay';
 import { setupTestingModule } from '@/test/setup-testing-module';
 import { INestApplication } from '@nestjs/common/interfaces';
 import { TestingModule } from '@nestjs/testing';
-import { firstValueFrom, mergeMap, retry, timer } from 'rxjs';
 import * as request from 'supertest';
 import { v4 as uuid } from 'uuid';
 import { ListTablesResponse } from './dto/list-tables.response';
+import { EVENT_STORE_SERVICE, EventStoreService } from '@rb/event-sourcing';
+import { TableAddedEvent, TableRemovedEvent } from '@rb/events';
 
 describe('List tables E2E - /tables (GET)', () => {
   let testingModule: TestingModule;
   let app: INestApplication;
+  let eventStoreService: EventStoreService;
 
   beforeEach(async () => {
-    ({ testingModule, app } = await setupTestingModule());
+    ({ testingModule, app } = await setupTestingModule({
+      disableSagas: true,
+    }));
+
+    eventStoreService = app.get(EVENT_STORE_SERVICE);
   });
 
   afterAll(async () => {
@@ -31,40 +38,45 @@ describe('List tables E2E - /tables (GET)', () => {
     const table2Id = uuid();
 
     beforeEach(async () => {
-      await request(app.getHttpServer())
-        .post('/tables')
-        .send({
+      await eventStoreService.publish(
+        new TableAddedEvent({
           id: table1Id,
           seats: 4,
-        })
-        .expect(201);
+        }),
+      );
 
-      await request(app.getHttpServer())
-        .post('/tables')
-        .send({
+      await eventStoreService.publish(
+        new TableAddedEvent({
           id: table2Id,
           seats: 6,
-        })
-        .expect(201);
+        }),
+      );
     });
 
     it('should return all tables', async () => {
       // We need to retry the assertion because the projection is eventually consistent
-      await retryAssertion(async () => {
-        const tables = await listTables(app);
-        expect(tables).toEqual({
-          tables: [
-            {
-              id: table1Id,
-              seats: 4,
-            },
-            {
-              id: table2Id,
-              seats: 6,
-            },
-          ],
-        });
-      });
+      await retryWithDelay(
+        async () => {
+          const tables = await listTables(app);
+
+          expect(tables).toEqual({
+            tables: [
+              {
+                id: table1Id,
+                seats: 4,
+              },
+              {
+                id: table2Id,
+                seats: 6,
+              },
+            ],
+          });
+        },
+        {
+          maxRetries: 5,
+          delay: 1000,
+        },
+      );
     });
   });
 
@@ -72,43 +84,34 @@ describe('List tables E2E - /tables (GET)', () => {
     const table1Id = uuid();
 
     beforeEach(async () => {
-      await request(app.getHttpServer())
-        .post('/tables')
-        .send({
+      await eventStoreService.publish(
+        new TableAddedEvent({
           id: table1Id,
           seats: 4,
-        })
-        .expect(201);
+        }),
+      );
 
-      await request(app.getHttpServer())
-        .delete(`/tables/${table1Id}`)
-        .expect(200);
+      await eventStoreService.publish(new TableRemovedEvent(table1Id));
     });
 
     it('should not return the removed table', async () => {
       // We need to retry the assertion because the projection is eventually consistent
-      await retryAssertion(async () => {
-        const tableResponse = await listTables(app);
+      await retryWithDelay(
+        async () => {
+          const tableResponse = await listTables(app);
 
-        expect(tableResponse).toEqual({
-          tables: [],
-        });
-      });
+          expect(tableResponse).toEqual({
+            tables: [],
+          });
+        },
+        {
+          maxRetries: 5,
+          delay: 1000,
+        },
+      );
     });
   });
 });
-
-async function retryAssertion(assertionFn: () => Promise<void>) {
-  const maxRetries = 5;
-  const retryDelay = 1000;
-
-  return firstValueFrom(
-    timer(0, retryDelay).pipe(
-      mergeMap(() => assertionFn()),
-      retry(maxRetries),
-    ),
-  );
-}
 
 async function listTables(app: INestApplication): Promise<ListTablesResponse> {
   return request(app.getHttpServer())

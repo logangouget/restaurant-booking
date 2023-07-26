@@ -9,7 +9,9 @@ describe('Remove table E2E - /tables (DELETE)', () => {
   let app: INestApplication;
 
   beforeEach(async () => {
-    ({ testingModule, app } = await setupTestingModule());
+    ({ testingModule, app } = await setupTestingModule({
+      disableProjections: true,
+    }));
   });
 
   afterAll(async () => {

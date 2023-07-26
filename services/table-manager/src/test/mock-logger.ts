@@ -1,6 +1,15 @@
-import { Logger } from '@nestjs/common';
+import { INestApplication, Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 
-export const mockLogger = () => {
+export const mockLogger = (app: INestApplication) => {
+  const configService = app.get(ConfigService);
+
+  const ENABLE_TEST_LOGS = configService.get('ENABLE_TEST_LOGS');
+
+  if (ENABLE_TEST_LOGS) {
+    return;
+  }
+
   jest.spyOn(Logger.prototype, 'log').mockImplementation(() => {
     return;
   });

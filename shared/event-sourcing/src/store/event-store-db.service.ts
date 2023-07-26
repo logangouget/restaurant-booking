@@ -152,6 +152,10 @@ export class EventStoreDbService implements EventStoreService {
     return observable;
   }
 
+  async replayParkedEvents(streamName: string, groupName: string) {
+    await this.client.replayParkedMessagesToStream(streamName, groupName);
+  }
+
   private mapEventToJsonEvent<T, X>(event: Event<T, X>) {
     const { correlationId, ...metadata } = event.metadata ?? {};
 
