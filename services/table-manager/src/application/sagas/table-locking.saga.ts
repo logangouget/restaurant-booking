@@ -33,34 +33,26 @@ export class TableLockingSaga {
 
     logger.log('Initializing TableLockingSaga');
 
-    const streamName = '$et-table-booking-initiated';
-
     const groupName = this.configService.get<string>(
       'TABLE_LOCKING_SAGA_GROUP_NAME',
     );
 
-    const tableLockedStreamName = '$et-table-lock-placed';
-    const tableLockedGroupName = this.configService.get<string>(
-      'TABLE_LOCKING_SAGA_GROUP_NAME',
-    );
-
+    const tableBookingInitiatedStreamName = '$et-table-booking-initiated';
+    const tableLockPlacedStreamName = '$et-table-lock-placed';
     const bookingCancelledStreamName = '$et-table-booking-cancelled';
-    const bookingCancelledGroupName = this.configService.get<string>(
-      'TABLE_LOCKING_SAGA_GROUP_NAME',
-    );
 
     const sources$ = await Promise.all([
       this.eventStoreDbService.initPersistentSubscriptionToStream(
-        streamName,
+        tableBookingInitiatedStreamName,
         groupName,
       ),
       this.eventStoreDbService.initPersistentSubscriptionToStream(
-        tableLockedStreamName,
-        tableLockedGroupName,
+        tableLockPlacedStreamName,
+        groupName,
       ),
       this.eventStoreDbService.initPersistentSubscriptionToStream(
         bookingCancelledStreamName,
-        bookingCancelledGroupName,
+        groupName,
       ),
     ]);
 
@@ -75,18 +67,22 @@ export class TableLockingSaga {
   private async handleEvent(resolvedEvent: AcknowledgeableEventStoreEvent) {
     this.logger.debug(`Handling event: ${resolvedEvent.type}`);
 
-    switch (resolvedEvent.type as TableEventType | TableBookingEventType) {
-      case 'table-booking-initiated':
-        await this.onTableBookingInitiated(resolvedEvent);
-        break;
-      case 'table-lock-placed':
-        await this.onTableLockPlaced(resolvedEvent);
-        break;
-      case 'table-booking-cancelled':
-        await this.onBookingCancelled(resolvedEvent);
-        break;
-      default:
-        this.logger.warn(`Unhandled event: ${resolvedEvent.type}`);
+    try {
+      switch (resolvedEvent.type as TableEventType | TableBookingEventType) {
+        case 'table-booking-initiated':
+          await this.onTableBookingInitiated(resolvedEvent);
+          break;
+        case 'table-lock-placed':
+          await this.onTableLockPlaced(resolvedEvent);
+          break;
+        case 'table-booking-cancelled':
+          await this.onBookingCancelled(resolvedEvent);
+          break;
+        default:
+          this.logger.warn(`Unhandled event: ${resolvedEvent.type}`);
+      }
+    } catch (error) {
+      this.logger.error(error, error.stack);
     }
   }
 

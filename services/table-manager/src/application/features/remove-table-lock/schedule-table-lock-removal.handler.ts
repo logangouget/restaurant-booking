@@ -61,6 +61,7 @@ export class ScheduleTableLockRemovalHandler
       } satisfies RemoveTableLockJobPayload,
       {
         delay,
+        jobId: command.correlationId,
       },
     );
   }
