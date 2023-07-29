@@ -1,12 +1,12 @@
-import { defineFeature, loadFeature } from 'jest-cucumber';
-import { AddTableCommand } from './add-table.command';
-import { Test, TestingModule } from '@nestjs/testing';
-import { AddTableHandler } from './add-table.handler';
 import { Table } from '@/domain/table';
 import {
   TABLE_EVENT_STORE_REPOSITORY_INTERFACE,
   TableEventStoreRepositoryInterface,
 } from '@/infrastructure/repository/event-store/table.event-store.repository.interface';
+import { Test, TestingModule } from '@nestjs/testing';
+import { defineFeature, loadFeature } from 'jest-cucumber';
+import { AddTableCommand } from './add-table.command';
+import { AddTableHandler } from './add-table.handler';
 import { TableAlreadyExistsError } from './errors';
 
 const feature = loadFeature('./add-table.feature', {
@@ -37,13 +37,9 @@ defineFeature(feature, (test) => {
     addTable = testingModule.get<AddTableHandler>(AddTableHandler);
   });
 
-  test('Adding a table as a manager', ({ given, when, then }) => {
+  test('Adding a table as a manager', ({ when, then }) => {
     beforeAll(() => {
       mockedTableEventStoreRepository.findTableById.mockResolvedValue(null);
-    });
-
-    given('I am a manager', () => {
-      // TODO: implement
     });
 
     when(
@@ -61,10 +57,6 @@ defineFeature(feature, (test) => {
 
   test('Giving a non-unique identifier', ({ given, when, then }) => {
     let expectedError: Error;
-
-    given('I am a manager', () => {
-      // TODO: implement
-    });
 
     given(/^I have added a table with the identifier "(.*)"$/, (id: string) => {
       mockedTableEventStoreRepository.findTableById.mockResolvedValue(
