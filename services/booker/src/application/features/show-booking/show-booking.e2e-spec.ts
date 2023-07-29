@@ -1,3 +1,4 @@
+import { getValidFutureTimeSlot } from '@/test/get-future-date';
 import { retryWithDelay } from '@/test/retry-with-delay';
 import { setupTestingModule } from '@/test/setup-testing-module';
 import { INestApplication } from '@nestjs/common/interfaces';
@@ -25,7 +26,7 @@ describe('Show booking E2E - /booking/${bookingId} (GET)', () => {
     eventStoreService = app.get<EventStoreService>(EVENT_STORE_SERVICE);
   });
 
-  afterAll(async () => {
+  afterEach(async () => {
     await testingModule.close();
   });
 
@@ -49,13 +50,7 @@ describe('Show booking E2E - /booking/${bookingId} (GET)', () => {
     const tableId = uuid();
     const bookingId = uuid();
 
-    const timeSlotFromDate = new Date('2023-01-01T12:00Z');
-    const timeSlotToDate = new Date('2023-01-01T14:00Z');
-
-    const timeSlot = {
-      from: timeSlotFromDate,
-      to: timeSlotToDate,
-    };
+    const timeSlot = getValidFutureTimeSlot();
 
     beforeEach(async () => {
       await bookTable({
@@ -78,14 +73,13 @@ describe('Show booking E2E - /booking/${bookingId} (GET)', () => {
             id: bookingId,
             tableId,
             timeSlot: {
-              from: timeSlotFromDate.toISOString(),
-              to: timeSlotToDate.toISOString(),
+              from: timeSlot.from.toISOString(),
+              to: timeSlot.to.toISOString(),
             },
             status: 'confirmed',
           });
         },
         {
-          maxRetries: 4,
           delay: 1000,
         },
       );

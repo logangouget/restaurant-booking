@@ -14,7 +14,7 @@ describe('Remove table E2E - /tables (DELETE)', () => {
     }));
   });
 
-  afterAll(async () => {
+  afterEach(async () => {
     await testingModule.close();
   });
 

@@ -8,13 +8,23 @@ import {
   IsString,
   Validate,
   ValidateNested,
+  ValidationArguments,
   ValidatorConstraint,
   ValidatorConstraintInterface,
+  isEmpty,
 } from 'class-validator';
 
-@ValidatorConstraint({ name: 'timeSlot', async: false })
-export class TimeSlotConstraint implements ValidatorConstraintInterface {
+@ValidatorConstraint({ async: true })
+export class IsValidTimeSlotConstraint implements ValidatorConstraintInterface {
   validate(timeslot: TimeSlot) {
+    if (isEmpty(timeslot)) {
+      return false;
+    }
+
+    if (!timeslot.from || !timeslot.to) {
+      return false;
+    }
+
     return new TimeSlotVO(timeslot.from, timeslot.to).isValid();
   }
 
@@ -24,32 +34,30 @@ export class TimeSlotConstraint implements ValidatorConstraintInterface {
     return `${paddedHours}:${paddedMinutes}`;
   }
 
-  defaultMessage() {
+  defaultMessage(args: ValidationArguments) {
     const fromMorning = this.formatTime(timeSlotConfiguration.morning.from);
     const toMorning = this.formatTime(timeSlotConfiguration.morning.to);
 
     const fromEvening = this.formatTime(timeSlotConfiguration.evening.from);
     const toEvening = this.formatTime(timeSlotConfiguration.evening.to);
 
-    return `Invalid time slot. Valid time slots are: ${fromMorning} - ${toMorning} and ${fromEvening} - ${toEvening}.`;
+    return `Invalid ${args.property}. Valid time slots are: ${fromMorning} - ${toMorning} and ${fromEvening} - ${toEvening}.`;
   }
 }
 
 export class TimeSlot {
   @ApiProperty()
-  @IsNotEmpty()
   @Transform(({ value }) => new Date(value))
   @IsDate()
   from: Date;
 
   @ApiProperty()
-  @IsNotEmpty()
   @Transform(({ value }) => new Date(value))
   @IsDate()
   to: Date;
 }
 
-export class BookTableRequest {
+export class InitiateTableBookingRequest {
   @ApiProperty()
   @IsString()
   @IsNotEmpty()
@@ -58,6 +66,6 @@ export class BookTableRequest {
   @ApiProperty()
   @Type(() => TimeSlot)
   @ValidateNested()
-  @Validate(TimeSlotConstraint)
+  @Validate(IsValidTimeSlotConstraint)
   timeSlot: TimeSlot;
 }

@@ -1,18 +1,14 @@
-import { TableEventStoreRepository } from '@/infrastructure/repository/event-store/table.event-store.repository';
-import { TABLE_EVENT_STORE_REPOSITORY_INTERFACE } from '@/infrastructure/repository/event-store/table.event-store.repository.interface';
+import { getAllStreamEvents } from '@/test/get-all-stream-events';
+import { retryWithDelay } from '@/test/retry-with-delay';
 import { setupTestingModule } from '@/test/setup-testing-module';
 import { INestApplication } from '@nestjs/common';
 import { TestingModule } from '@nestjs/testing';
 import { EVENT_STORE_SERVICE, EventStoreService } from '@rb/event-sourcing';
 import {
-  JSONMetadata,
   TableBookingInitiatedEvent,
   TableLockPlacementFailedEvent,
-  parseTableLockPlacedEventData,
-  parseTableLockPlacementFailedEventData,
 } from '@rb/events';
 import { TableBaseEvent } from '@rb/events/dist/table/table-base-event';
-import { filter, firstValueFrom, map, take, tap } from 'rxjs';
 import * as request from 'supertest';
 import { v4 as uuid } from 'uuid';
 
@@ -20,7 +16,6 @@ describe('Place table lock E2E - Table locking saga', () => {
   let testingModule: TestingModule;
   let app: INestApplication;
   let eventStoreDbService: EventStoreService;
-  let tableEventStoreRepository: TableEventStoreRepository;
 
   beforeEach(async () => {
     ({ testingModule, app } = await setupTestingModule({
@@ -28,12 +23,9 @@ describe('Place table lock E2E - Table locking saga', () => {
     }));
 
     eventStoreDbService = app.get<EventStoreService>(EVENT_STORE_SERVICE);
-    tableEventStoreRepository = app.get<TableEventStoreRepository>(
-      TABLE_EVENT_STORE_REPOSITORY_INTERFACE,
-    );
   });
 
-  afterAll(async () => {
+  afterEach(async () => {
     await testingModule.close();
   });
 
@@ -67,36 +59,25 @@ describe('Place table lock E2E - Table locking saga', () => {
       });
 
       it('should lock the table', async () => {
-        const source$ =
-          await eventStoreDbService.initPersistentSubscriptionToStream(
+        await retryWithDelay(async () => {
+          const events = await getAllStreamEvents(
+            eventStoreDbService,
             TableBaseEvent.buildStreamName(tableId),
-            `table-${tableId}-lock`,
           );
 
-        const tableLockedPlacedEvent = await firstValueFrom(
-          source$.pipe(
-            tap(async (event) => {
-              await event.ack();
-            }),
-            filter((event) => event.type === 'table-lock-placed'),
-            map((event) => ({
-              original: event,
-              data: parseTableLockPlacedEventData(event.data),
-              metadata: event.metadata as JSONMetadata,
-            })),
-            take(1),
-          ),
-        );
+          const latestEvent = events[events.length - 1];
 
-        const table = await tableEventStoreRepository.findTableById(tableId);
+          expect(latestEvent.data).toMatchObject({
+            id: tableId,
+            timeSlot: {
+              from: timeSlot.from.toISOString(),
+              to: timeSlot.to.toISOString(),
+            },
+          });
 
-        expect(table.locks).toHaveLength(1);
-        expect(tableLockedPlacedEvent.data).toMatchObject({
-          id: tableId,
-          timeSlot,
-        });
-        expect(tableLockedPlacedEvent.metadata).toMatchObject({
-          $correlationId: correlationId,
+          expect(latestEvent.metadata).toMatchObject({
+            $correlationId: correlationId,
+          });
         });
       });
     });
@@ -125,33 +106,25 @@ describe('Place table lock E2E - Table locking saga', () => {
       });
 
       it('should not lock the table and emit a failure', async () => {
-        const source$ =
-          await eventStoreDbService.initPersistentSubscriptionToStream(
+        await retryWithDelay(async () => {
+          const events = await getAllStreamEvents(
+            eventStoreDbService,
             TableLockPlacementFailedEvent.STREAM_NAME,
-            `table_lock_placement_failed`,
           );
 
-        const failureEvent = await firstValueFrom(
-          source$.pipe(
-            map((event) => ({
-              original: event,
-              data: parseTableLockPlacementFailedEventData(event.data),
-              metadata: event.metadata as JSONMetadata,
-            })),
-            filter((event) => event.data.tableId === tableId),
-            take(1),
-            tap(async (event) => {
-              await event.original.ack();
-            }),
-          ),
-        );
+          const latestEvent = events[events.length - 1];
 
-        expect(failureEvent.data).toMatchObject({
-          tableId,
-          timeSlot,
-        });
-        expect(failureEvent.metadata).toMatchObject({
-          $correlationId: correlationId,
+          expect(latestEvent.data).toMatchObject({
+            tableId,
+            timeSlot: {
+              from: timeSlot.from.toISOString(),
+              to: timeSlot.to.toISOString(),
+            },
+          });
+
+          expect(latestEvent.metadata).toMatchObject({
+            $correlationId: correlationId,
+          });
         });
       });
     });

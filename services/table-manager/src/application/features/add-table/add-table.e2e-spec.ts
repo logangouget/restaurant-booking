@@ -14,7 +14,7 @@ describe('Add table E2E - /tables (POST)', () => {
     }));
   });
 
-  afterAll(async () => {
+  afterEach(async () => {
     await testingModule.close();
   });
 

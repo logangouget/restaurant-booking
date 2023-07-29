@@ -17,6 +17,11 @@ export const ackAllPersistentSubscriptionEvents = async (
     groupName: string;
   },
 ) => {
+  await eventStoreService.removePersistentSubscriptionToStream(
+    streamName,
+    groupName,
+  );
+
   const source$ = await eventStoreService.initPersistentSubscriptionToStream(
     streamName,
     groupName,

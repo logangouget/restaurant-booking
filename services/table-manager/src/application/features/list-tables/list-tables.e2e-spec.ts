@@ -21,7 +21,7 @@ describe('List tables E2E - /tables (GET)', () => {
     eventStoreService = app.get(EVENT_STORE_SERVICE);
   });
 
-  afterAll(async () => {
+  afterEach(async () => {
     await testingModule.close();
   });
 
@@ -55,28 +55,22 @@ describe('List tables E2E - /tables (GET)', () => {
 
     it('should return all tables', async () => {
       // We need to retry the assertion because the projection is eventually consistent
-      await retryWithDelay(
-        async () => {
-          const tables = await listTables(app);
+      await retryWithDelay(async () => {
+        const tables = await listTables(app);
 
-          expect(tables).toEqual({
-            tables: [
-              {
-                id: table1Id,
-                seats: 4,
-              },
-              {
-                id: table2Id,
-                seats: 6,
-              },
-            ],
-          });
-        },
-        {
-          maxRetries: 5,
-          delay: 1000,
-        },
-      );
+        expect(tables).toEqual({
+          tables: [
+            {
+              id: table1Id,
+              seats: 4,
+            },
+            {
+              id: table2Id,
+              seats: 6,
+            },
+          ],
+        });
+      });
     });
   });
 
@@ -96,19 +90,13 @@ describe('List tables E2E - /tables (GET)', () => {
 
     it('should not return the removed table', async () => {
       // We need to retry the assertion because the projection is eventually consistent
-      await retryWithDelay(
-        async () => {
-          const tableResponse = await listTables(app);
+      await retryWithDelay(async () => {
+        const tableResponse = await listTables(app);
 
-          expect(tableResponse).toEqual({
-            tables: [],
-          });
-        },
-        {
-          maxRetries: 5,
-          delay: 1000,
-        },
-      );
+        expect(tableResponse).toEqual({
+          tables: [],
+        });
+      });
     });
   });
 });

@@ -9,8 +9,8 @@ import {
   ValidationPipe,
 } from '@nestjs/common';
 import { CommandBus } from '@nestjs/cqrs';
-import { BookTableRequest } from './dto/book-table.request';
-import { BookTableResponse } from './dto/book-table.response';
+import { InitiateTableBookingRequest } from './dto/initiate-table-booking.request';
+import { InitiateTableBookingResponse } from './dto/initiate-table-booking.response';
 import { InitiateTableBookingCommand } from './initiate-table-booking.command';
 import { ApiProperty, ApiResponse } from '@nestjs/swagger';
 
@@ -26,20 +26,20 @@ export class InitiateTableBookingController {
   @Post('booking/initiate')
   @ApiProperty({
     description: 'Initiate a booking',
-    type: BookTableResponse,
+    type: InitiateTableBookingResponse,
   })
   @ApiResponse({
     status: 201,
     description: 'The booking has been successfully initiated.',
-    type: BookTableResponse,
+    type: InitiateTableBookingResponse,
   })
   @ApiResponse({
     status: 409,
     description: 'The booking could not be initiated.',
   })
   async initiateBooking(
-    @Body() body: BookTableRequest,
-  ): Promise<BookTableResponse> {
+    @Body() body: InitiateTableBookingRequest,
+  ): Promise<InitiateTableBookingResponse> {
     const command = new InitiateTableBookingCommand(
       body.tableId,
       body.timeSlot,
@@ -51,7 +51,10 @@ export class InitiateTableBookingController {
         TableBooking
       >(command);
 
-      return new BookTableResponse(tableBooking.tableId, tableBooking.id);
+      return new InitiateTableBookingResponse(
+        tableBooking.tableId,
+        tableBooking.id,
+      );
     } catch (err) {
       if (err instanceof SlotUnavailableException) {
         throw new ConflictException(err.message);

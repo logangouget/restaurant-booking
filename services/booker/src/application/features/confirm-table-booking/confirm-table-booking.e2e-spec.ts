@@ -1,10 +1,16 @@
+import { getAllStreamEvents } from '@/test/get-all-stream-events';
+import { getValidFutureTimeSlot } from '@/test/get-future-date';
+import { retryWithDelay } from '@/test/retry-with-delay';
 import { setupTestingModule } from '@/test/setup-testing-module';
 import { INestApplication } from '@nestjs/common';
 import { TestingModule } from '@nestjs/testing';
 import { EVENT_STORE_SERVICE, EventStoreService } from '@rb/event-sourcing';
-import { TableBookingInitiatedEvent, TableLockPlacedEvent } from '@rb/events';
+import {
+  TableBookingConfirmedEvent,
+  TableBookingInitiatedEvent,
+  TableLockPlacedEvent,
+} from '@rb/events';
 import { TableBookingBaseEvent } from '@rb/events/dist/table-booking/table-booking-base-event';
-import { filter, firstValueFrom, take } from 'rxjs';
 import { v4 as uuid } from 'uuid';
 
 describe('Confirm booking E2E - Table booking saga', () => {
@@ -19,17 +25,14 @@ describe('Confirm booking E2E - Table booking saga', () => {
     eventStoreDbService = app.get<EventStoreService>(EVENT_STORE_SERVICE);
   });
 
-  afterAll(async () => {
+  afterEach(async () => {
     await testingModule.close();
   });
 
   describe('When a table is locked and a booking is initiated', () => {
     const tableId = uuid();
     const bookingId = uuid();
-    const timeSlot = {
-      from: new Date(),
-      to: new Date(),
-    };
+    const timeSlot = getValidFutureTimeSlot();
 
     beforeEach(async () => {
       const bookingInitiatedEvent = new TableBookingInitiatedEvent(
@@ -59,27 +62,32 @@ describe('Confirm booking E2E - Table booking saga', () => {
     });
 
     it('should confirm the booking', async () => {
-      const source$ =
-        await eventStoreDbService.initPersistentSubscriptionToStream(
-          TableBookingBaseEvent.buildStreamName(bookingId),
-          `booking-${bookingId}-booking-confirmation`,
-        );
+      await retryWithDelay(
+        async () => {
+          const events = await getAllStreamEvents(
+            eventStoreDbService,
+            TableBookingBaseEvent.buildStreamName(bookingId),
+          );
 
-      const tableBookingConfirmedEvent = await firstValueFrom(
-        source$.pipe(
-          filter((event) => event.type === 'table-booking-confirmed'),
-          take(1),
-        ),
-      );
+          const latestEvent = events[events.length - 1];
 
-      expect(tableBookingConfirmedEvent.data).toMatchObject({
-        id: bookingId,
-        tableId: tableId,
-        timeSlot: {
-          from: timeSlot.from.toISOString(),
-          to: timeSlot.to.toISOString(),
+          expect(latestEvent.type).toEqual<TableBookingConfirmedEvent['type']>(
+            'table-booking-confirmed',
+          );
+
+          expect(latestEvent.data).toMatchObject({
+            id: bookingId,
+            tableId: tableId,
+            timeSlot: {
+              from: timeSlot.from.toISOString(),
+              to: timeSlot.to.toISOString(),
+            },
+          });
         },
-      });
+        {
+          delay: 1000,
+        },
+      );
     });
   });
 });
