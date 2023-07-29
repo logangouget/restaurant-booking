@@ -1,3 +1,4 @@
+import { getValidFutureTimeSlot } from '@/test/get-future-date';
 import { setupTestingModule } from '@/test/setup-testing-module';
 import { INestApplication } from '@nestjs/common/interfaces';
 import { TestingModule } from '@nestjs/testing';
@@ -18,8 +19,81 @@ describe('Book table E2E - /bookings/initiate (POST)', () => {
     eventStoreService = app.get<EventStoreService>(EVENT_STORE_SERVICE);
   });
 
-  afterAll(async () => {
+  afterEach(async () => {
     await testingModule.close();
+  });
+
+  describe('Validation errors', () => {
+    it('should return 400 when tableId is missing', async () => {
+      await request(app.getHttpServer())
+        .post('/booking/initiate')
+        .send({
+          timeSlot: {
+            from: getValidFutureTimeSlot().from,
+            to: getValidFutureTimeSlot().to,
+          },
+        })
+        .expect(400);
+    });
+
+    it('should return 400 when timeSlot is missing', async () => {
+      await request(app.getHttpServer())
+        .post('/booking/initiate')
+        .send({
+          tableId: uuid(),
+        })
+        .expect(400);
+    });
+
+    it('should return 400 when timeSlot.from is missing', async () => {
+      await request(app.getHttpServer())
+        .post('/booking/initiate')
+        .send({
+          tableId: uuid(),
+          timeSlot: {
+            to: getValidFutureTimeSlot().to,
+          },
+        })
+        .expect(400);
+    });
+
+    it('should return 400 when timeSlot.to is missing', async () => {
+      await request(app.getHttpServer())
+        .post('/booking/initiate')
+        .send({
+          tableId: uuid(),
+          timeSlot: {
+            from: getValidFutureTimeSlot().from,
+          },
+        })
+        .expect(400);
+    });
+
+    it('should return 400 when timeSlot.from is not a valid date', async () => {
+      await request(app.getHttpServer())
+        .post('/booking/initiate')
+        .send({
+          tableId: uuid(),
+          timeSlot: {
+            from: 'not-a-date',
+            to: getValidFutureTimeSlot().to,
+          },
+        })
+        .expect(400);
+    });
+
+    it('should return 400 when timeSlot.to is not a valid date', async () => {
+      await request(app.getHttpServer())
+        .post('/booking/initiate')
+        .send({
+          tableId: uuid(),
+          timeSlot: {
+            from: getValidFutureTimeSlot().from,
+            to: 'not-a-date',
+          },
+        })
+        .expect(400);
+    });
   });
 
   describe('Initiate booking', () => {
@@ -30,10 +104,7 @@ describe('Book table E2E - /bookings/initiate (POST)', () => {
         .post('/booking/initiate')
         .send({
           tableId: tableId,
-          timeSlot: {
-            from: getDate(1, 12),
-            to: getDate(1, 14),
-          },
+          timeSlot: getValidFutureTimeSlot(),
         })
         .expect(201);
     });
@@ -42,12 +113,9 @@ describe('Book table E2E - /bookings/initiate (POST)', () => {
   describe('Initiate a table booking for a table that is already booked', () => {
     const tableId = uuid();
 
-    const timeSlot = {
-      from: getDate(1, 12),
-      to: getDate(1, 14),
-    };
+    const timeSlot = getValidFutureTimeSlot();
 
-    beforeAll(async () => {
+    beforeEach(async () => {
       const bookingId = uuid();
 
       await eventStoreService.publish(
@@ -75,20 +143,10 @@ describe('Book table E2E - /bookings/initiate (POST)', () => {
       await request(app.getHttpServer())
         .post('/booking/initiate')
         .send({
-          tableId: tableId,
+          tableId,
           timeSlot,
         })
         .expect(409);
     });
   });
 });
-
-function getDate(daysFromToday: number, hours: number, min?: number): Date {
-  const date = new Date(
-    new Date().setDate(new Date().getDate() + daysFromToday),
-  );
-
-  date.setHours(hours, min ?? 0);
-
-  return date;
-}

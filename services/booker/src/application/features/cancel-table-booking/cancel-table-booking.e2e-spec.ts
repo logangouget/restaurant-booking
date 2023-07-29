@@ -1,14 +1,17 @@
+import { getAllStreamEvents } from '@/test/get-all-stream-events';
+import { getValidFutureTimeSlot } from '@/test/get-future-date';
+import { retryWithDelay } from '@/test/retry-with-delay';
 import { setupTestingModule } from '@/test/setup-testing-module';
 import { INestApplication } from '@nestjs/common';
 import { TestingModule } from '@nestjs/testing';
 import { EVENT_STORE_SERVICE, EventStoreService } from '@rb/event-sourcing';
 import {
+  TableBookingCancelledEvent,
   TableBookingConfirmedEvent,
   TableBookingInitiatedEvent,
   TableLockPlacementFailedEvent,
 } from '@rb/events';
 import { TableBookingBaseEvent } from '@rb/events/dist/table-booking/table-booking-base-event';
-import { filter, firstValueFrom, take } from 'rxjs';
 import * as request from 'supertest';
 import { v4 as uuid } from 'uuid';
 
@@ -25,7 +28,7 @@ describe('Cancel table booking E2E', () => {
     eventStoreDbService = app.get<EventStoreService>(EVENT_STORE_SERVICE);
   });
 
-  afterAll(async () => {
+  afterEach(async () => {
     await testingModule.close();
   });
 
@@ -33,10 +36,7 @@ describe('Cancel table booking E2E', () => {
     describe('When a booking is initiated and there is a lock failure', () => {
       const tableId = uuid();
       const bookingId = uuid();
-      const timeSlot = {
-        from: new Date(),
-        to: new Date(),
-      };
+      const timeSlot = getValidFutureTimeSlot();
 
       beforeEach(async () => {
         const bookingInitiatedEvent = new TableBookingInitiatedEvent(
@@ -63,27 +63,32 @@ describe('Cancel table booking E2E', () => {
       });
 
       it('should cancel the booking', async () => {
-        const source$ =
-          await eventStoreDbService.initPersistentSubscriptionToStream(
-            TableBookingBaseEvent.buildStreamName(bookingId),
-            `booking-${bookingId}-booking-confirmation`,
-          );
+        await retryWithDelay(
+          async () => {
+            const events = await getAllStreamEvents(
+              eventStoreDbService,
+              TableBookingBaseEvent.buildStreamName(bookingId),
+            );
 
-        const tableBookingCancelledEvent = await firstValueFrom(
-          source$.pipe(
-            filter((event) => event.type === 'table-booking-cancelled'),
-            take(1),
-          ),
-        );
+            const latestEvent = events[events.length - 1];
 
-        expect(tableBookingCancelledEvent.data).toEqual({
-          id: bookingId,
-          tableId,
-          timeSlot: {
-            from: timeSlot.from.toISOString(),
-            to: timeSlot.to.toISOString(),
+            expect(latestEvent.type).toEqual<
+              TableBookingCancelledEvent['type']
+            >('table-booking-cancelled');
+
+            expect(latestEvent.data).toEqual({
+              id: bookingId,
+              tableId,
+              timeSlot: {
+                from: timeSlot.from.toISOString(),
+                to: timeSlot.to.toISOString(),
+              },
+            });
           },
-        });
+          {
+            delay: 1000,
+          },
+        );
       });
     });
   });
@@ -102,10 +107,7 @@ describe('Cancel table booking E2E', () => {
     describe('When a booking is confirmed cancel route is called', () => {
       const tableId = uuid();
       const bookingId = uuid();
-      const timeSlot = {
-        from: new Date(),
-        to: new Date(),
-      };
+      const timeSlot = getValidFutureTimeSlot();
 
       beforeEach(async () => {
         const bookingInitiatedEvent = new TableBookingInitiatedEvent(

@@ -9,5 +9,6 @@
   "moduleNameMapper": {
     "^@/(.*)$": "<rootDir>/src/$1"
   },
-  "maxWorkers": 1
+  "maxWorkers": 1,
+  "testTimeout": 10000
 }

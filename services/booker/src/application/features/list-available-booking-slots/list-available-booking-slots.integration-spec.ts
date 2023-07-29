@@ -26,7 +26,7 @@ describe('ListAvailableBookingSlotsHandler database integration', () => {
     );
   });
 
-  afterAll(async () => {
+  afterEach(async () => {
     await testingModule.close();
   });
 
@@ -55,13 +55,13 @@ describe('ListAvailableBookingSlotsHandler database integration', () => {
             day: '2023-01-01',
             slots: [
               {
-                startTime: '12:00',
-                endTime: '14:00',
+                startTime: new Date('2023-01-01T12:00').toISOString(),
+                endTime: new Date('2023-01-01T14:00').toISOString(),
                 availableTables: ['table1'],
               },
               {
-                startTime: '19:00',
-                endTime: '21:00',
+                startTime: new Date('2023-01-01T19:00').toISOString(),
+                endTime: new Date('2023-01-01T21:00').toISOString(),
                 availableTables: ['table1'],
               },
             ],
@@ -84,8 +84,8 @@ describe('ListAvailableBookingSlotsHandler database integration', () => {
         revision: 0,
         tableId: 'table1',
         status: 'confirmed',
-        timeSlotFrom: new Date('2023-01-01:12:00Z'),
-        timeSlotTo: new Date('2023-01-01:14:00Z'),
+        timeSlotFrom: new Date('2023-01-01T12:00'),
+        timeSlotTo: new Date('2023-01-01T14:00'),
       });
     });
 
@@ -105,8 +105,8 @@ describe('ListAvailableBookingSlotsHandler database integration', () => {
             day: '2023-01-01',
             slots: [
               {
-                startTime: '19:00',
-                endTime: '21:00',
+                startTime: new Date('2023-01-01T19:00').toISOString(),
+                endTime: new Date('2023-01-01T21:00').toISOString(),
                 availableTables: ['table1'],
               },
             ],
@@ -129,8 +129,8 @@ describe('ListAvailableBookingSlotsHandler database integration', () => {
         revision: 0,
         tableId: 'table1',
         status: 'confirmed',
-        timeSlotFrom: new Date('2023-01-01:12:00Z'),
-        timeSlotTo: new Date('2023-01-01:14:00Z'),
+        timeSlotFrom: new Date('2023-01-01:12:00'),
+        timeSlotTo: new Date('2023-01-01:14:00'),
       });
 
       await db.insert(bookings).values({
@@ -138,8 +138,8 @@ describe('ListAvailableBookingSlotsHandler database integration', () => {
         revision: 0,
         tableId: 'table1',
         status: 'confirmed',
-        timeSlotFrom: new Date('2023-01-01:19:00Z'),
-        timeSlotTo: new Date('2023-01-01:21:00Z'),
+        timeSlotFrom: new Date('2023-01-01:19:00'),
+        timeSlotTo: new Date('2023-01-01:21:00'),
       });
     });
 
@@ -172,8 +172,8 @@ describe('ListAvailableBookingSlotsHandler database integration', () => {
         revision: 0,
         tableId: 'table1',
         status: 'cancelled',
-        timeSlotFrom: new Date('2023-01-01:12:00Z'),
-        timeSlotTo: new Date('2023-01-01:14:00Z'),
+        timeSlotFrom: new Date('2023-01-01:12:00'),
+        timeSlotTo: new Date('2023-01-01:14:00'),
       });
     });
 
@@ -193,13 +193,13 @@ describe('ListAvailableBookingSlotsHandler database integration', () => {
             day: '2023-01-01',
             slots: [
               {
-                startTime: '12:00',
-                endTime: '14:00',
+                startTime: new Date('2023-01-01T12:00').toISOString(),
+                endTime: new Date('2023-01-01T14:00').toISOString(),
                 availableTables: ['table1'],
               },
               {
-                startTime: '19:00',
-                endTime: '21:00',
+                startTime: new Date('2023-01-01T19:00').toISOString(),
+                endTime: new Date('2023-01-01T21:00').toISOString(),
                 availableTables: ['table1'],
               },
             ],
@@ -228,8 +228,8 @@ describe('ListAvailableBookingSlotsHandler database integration', () => {
         revision: 0,
         tableId: 'table1',
         status: 'confirmed',
-        timeSlotFrom: new Date('2023-01-01:12:00Z'),
-        timeSlotTo: new Date('2023-01-01:14:00Z'),
+        timeSlotFrom: new Date('2023-01-01:12:00'),
+        timeSlotTo: new Date('2023-01-01:14:00'),
       });
     });
 
@@ -249,13 +249,13 @@ describe('ListAvailableBookingSlotsHandler database integration', () => {
             day: '2023-01-01',
             slots: [
               {
-                startTime: '12:00',
-                endTime: '14:00',
+                startTime: new Date('2023-01-01T12:00').toISOString(),
+                endTime: new Date('2023-01-01T14:00').toISOString(),
                 availableTables: ['table2'],
               },
               {
-                startTime: '19:00',
-                endTime: '21:00',
+                startTime: new Date('2023-01-01T19:00').toISOString(),
+                endTime: new Date('2023-01-01T21:00').toISOString(),
                 availableTables: ['table1', 'table2'],
               },
             ],
@@ -327,13 +327,13 @@ describe('ListAvailableBookingSlotsHandler database integration', () => {
             day: '2023-01-01',
             slots: [
               {
-                startTime: '12:00',
-                endTime: '14:00',
+                startTime: new Date('2023-01-01T12:00').toISOString(),
+                endTime: new Date('2023-01-01T14:00').toISOString(),
                 availableTables: ['table1', 'table2'],
               },
               {
-                startTime: '19:00',
-                endTime: '21:00',
+                startTime: new Date('2023-01-01T19:00').toISOString(),
+                endTime: new Date('2023-01-01T21:00').toISOString(),
                 availableTables: ['table1', 'table2'],
               },
             ],
@@ -342,13 +342,13 @@ describe('ListAvailableBookingSlotsHandler database integration', () => {
             day: '2023-01-02',
             slots: [
               {
-                startTime: '12:00',
-                endTime: '14:00',
+                startTime: new Date('2023-01-02T12:00').toISOString(),
+                endTime: new Date('2023-01-02T14:00').toISOString(),
                 availableTables: ['table1', 'table2'],
               },
               {
-                startTime: '19:00',
-                endTime: '21:00',
+                startTime: new Date('2023-01-02T19:00').toISOString(),
+                endTime: new Date('2023-01-02T21:00').toISOString(),
                 availableTables: ['table1', 'table2'],
               },
             ],
@@ -406,13 +406,13 @@ describe('ListAvailableBookingSlotsHandler database integration', () => {
             day: '2023-01-01',
             slots: [
               {
-                startTime: '12:00',
-                endTime: '14:00',
+                startTime: new Date('2023-01-01T12:00').toISOString(),
+                endTime: new Date('2023-01-01T14:00').toISOString(),
                 availableTables: ['table2'],
               },
               {
-                startTime: '19:00',
-                endTime: '21:00',
+                startTime: new Date('2023-01-01T19:00').toISOString(),
+                endTime: new Date('2023-01-01T21:00').toISOString(),
                 availableTables: ['table2'],
               },
             ],

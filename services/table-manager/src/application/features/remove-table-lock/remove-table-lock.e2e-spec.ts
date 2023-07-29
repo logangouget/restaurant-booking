@@ -30,7 +30,7 @@ describe('Remove table lock E2E - Table locking saga', () => {
     removeTableLockQueue = app.get<Queue>(getQueueToken('remove-table-lock'));
   });
 
-  afterAll(async () => {
+  afterEach(async () => {
     await testingModule.close();
   });
 
@@ -62,16 +62,10 @@ describe('Remove table lock E2E - Table locking saga', () => {
         ),
       );
 
-      await retryWithDelay(
-        async () => {
-          const job = await removeTableLockQueue.getJob(correlationId);
-          expect(job).not.toBeNull();
-        },
-        {
-          delay: 1000,
-          maxRetries: 5,
-        },
-      );
+      await retryWithDelay(async () => {
+        const job = await removeTableLockQueue.getJob(correlationId);
+        expect(job).not.toBeNull();
+      });
 
       await eventStoreDbService.publish(
         new TableBookingCancelledEvent(
@@ -88,19 +82,13 @@ describe('Remove table lock E2E - Table locking saga', () => {
     });
 
     it('should remove the lock and scheduled lock removal', async () => {
-      await retryWithDelay(
-        async () => {
-          const table = await tableEventStoreRepository.findTableById(tableId);
-          const job = await removeTableLockQueue.getJob(correlationId);
+      await retryWithDelay(async () => {
+        const table = await tableEventStoreRepository.findTableById(tableId);
+        const job = await removeTableLockQueue.getJob(correlationId);
 
-          expect(job).toBeNull();
-          expect(table.locks).toHaveLength(0);
-        },
-        {
-          delay: 1000,
-          maxRetries: 5,
-        },
-      );
+        expect(job).toBeNull();
+        expect(table.locks).toHaveLength(0);
+      });
     });
   });
 });

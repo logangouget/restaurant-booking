@@ -1,17 +1,16 @@
-import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
-import {
-  ListAvailableBookingSlotsQuery,
-  ListAvailableBookingSlotsQueryResult,
-} from './list-available-booking-slots.query';
+import { timeSlotConfiguration } from '@/domain/timeslot-configuration';
 import {
   DB,
   DbType,
 } from '@/infrastructure/repository/database/database.module';
-import { Inject } from '@nestjs/common';
-import { sql } from 'drizzle-orm';
 import { bookings, tables } from '@/infrastructure/repository/database/schemas';
-import { TimeSlot } from '@/domain/time-slot.value-object';
-import { timeSlotConfiguration } from '@/domain/timeslot-configuration';
+import { Inject } from '@nestjs/common';
+import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
+import { sql } from 'drizzle-orm';
+import {
+  ListAvailableBookingSlotsQuery,
+  ListAvailableBookingSlotsQueryResult,
+} from './list-available-booking-slots.query';
 
 @QueryHandler(ListAvailableBookingSlotsQuery)
 export class ListAvailableBookingSlotsHandler
@@ -28,20 +27,31 @@ export class ListAvailableBookingSlotsHandler
     const startDate = query.startDate.toISOString().split('T')[0];
     const endDate = query.endDate.toISOString().split('T')[0];
 
+    const timeToPgTime = (hours: number, minutes: number) => {
+      return sql.raw(`'${hours}:${minutes}'::time`);
+    };
+
     const config = {
-      morningStartTime: sql.raw(
-        `'${timeSlotConfiguration.morning.from.hours}:${timeSlotConfiguration.morning.from.minutes}'::time`,
+      morningStartTime: timeToPgTime(
+        timeSlotConfiguration.morning.from.hours,
+        timeSlotConfiguration.morning.from.minutes,
       ),
-      morningEndTime: sql.raw(
-        `'${timeSlotConfiguration.morning.to.hours}:${timeSlotConfiguration.morning.to.minutes}'::time`,
+
+      morningEndTime: timeToPgTime(
+        timeSlotConfiguration.morning.to.hours,
+        timeSlotConfiguration.morning.to.minutes,
       ),
-      eveningStartTime: sql.raw(
-        `'${timeSlotConfiguration.evening.from.hours}:${timeSlotConfiguration.evening.from.minutes}'::time`,
+      eveningStartTime: timeToPgTime(
+        timeSlotConfiguration.evening.from.hours,
+        timeSlotConfiguration.evening.from.minutes,
       ),
-      eveningEndTime: sql.raw(
-        `'${timeSlotConfiguration.evening.to.hours}:${timeSlotConfiguration.evening.to.minutes}'::time`,
+      eveningEndTime: timeToPgTime(
+        timeSlotConfiguration.evening.to.hours,
+        timeSlotConfiguration.evening.to.minutes,
       ),
     };
+
+    const timeZone = sql.raw(`'${timeSlotConfiguration.timezone}'`);
 
     const rows: Array<{
       day: string;
@@ -77,8 +87,8 @@ export class ListAvailableBookingSlotsHandler
           LEFT JOIN ${bookings} ON (
             ${bookings.tableId} = ${tables.id}
             AND ${bookings.status} != 'cancelled'
-            AND ${bookings.timeSlotFrom} = (ts.day + ts.morning_start)::timestamp
-            AND ${bookings.timeSlotTo} = (ts.day + ts.morning_end)::timestamp
+            AND ${bookings.timeSlotFrom} = (ts.day + ts.morning_start)::timestamp AT TIME ZONE ${timeZone}
+            AND ${bookings.timeSlotTo} = (ts.day + ts.morning_end)::timestamp AT TIME ZONE ${timeZone}
           )
         WHERE
           ${tables.seats} >= ${query.people}
@@ -99,8 +109,8 @@ export class ListAvailableBookingSlotsHandler
           LEFT JOIN ${bookings} ON (
             ${bookings.tableId} = ${tables.id}
             AND ${bookings.status} != 'cancelled'
-            AND ${bookings.timeSlotFrom} = (ts.day + ts.evening_start)::timestamp
-            AND ${bookings.timeSlotTo} = (ts.day + ts.evening_end)::timestamp
+            AND ${bookings.timeSlotFrom} = (ts.day + ts.evening_start)::timestamp AT TIME ZONE ${timeZone}
+            AND ${bookings.timeSlotTo} = (ts.day + ts.evening_end)::timestamp AT TIME ZONE ${timeZone}
           )
         WHERE
           ${tables.seats} >= ${query.people}
@@ -126,12 +136,14 @@ export class ListAvailableBookingSlotsHandler
     const availabilities = rows.reduce<
       ListAvailableBookingSlotsQueryResult['availabilities']
     >((acc, row) => {
-      const day = acc.find((a) => a.day === row.day);
+      const daySlots = acc.find((a) => a.day === row.day);
 
-      if (day) {
-        day.slots.push({
-          startTime: row.start_time,
-          endTime: row.end_time,
+      if (daySlots) {
+        daySlots.slots.push({
+          startTime: new Date(
+            daySlots.day + 'T' + row.start_time,
+          ).toISOString(),
+          endTime: new Date(daySlots.day + 'T' + row.end_time).toISOString(),
           availableTables: row.available_tables,
         });
         return acc;
@@ -141,8 +153,8 @@ export class ListAvailableBookingSlotsHandler
         day: row.day,
         slots: [
           {
-            startTime: row.start_time,
-            endTime: row.end_time,
+            startTime: new Date(row.day + 'T' + row.start_time).toISOString(),
+            endTime: new Date(row.day + 'T' + row.end_time).toISOString(),
             availableTables: row.available_tables,
           },
         ],

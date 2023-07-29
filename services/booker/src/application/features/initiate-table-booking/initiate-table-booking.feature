@@ -9,3 +9,8 @@ Feature: Initiate table booking
     Given a table with id "1" and a time slot that is already booked
     When I book this table
     Then booking should not be initiated
+
+  Scenario: Initiate booking with a past time slot
+    Given a table with id "1" and a past time slot
+    When I book this table
+    Then booking should not be initiated

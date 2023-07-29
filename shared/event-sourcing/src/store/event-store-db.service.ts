@@ -152,8 +152,23 @@ export class EventStoreDbService implements EventStoreService {
     return observable;
   }
 
-  async replayParkedEvents(streamName: string, groupName: string) {
-    await this.client.replayParkedMessagesToStream(streamName, groupName);
+  async removePersistentSubscriptionToStream(
+    streamName: string,
+    groupName: string,
+  ): Promise<void> {
+    const currentSubscriptions =
+      await this.client.listAllPersistentSubscriptions();
+
+    const existingSubscription = currentSubscriptions.find(
+      (sub) => sub.groupName === groupName && sub.eventSource === streamName,
+    );
+
+    if (existingSubscription) {
+      await this.client.deletePersistentSubscriptionToStream(
+        streamName,
+        groupName,
+      );
+    }
   }
 
   private mapEventToJsonEvent<T, X>(event: Event<T, X>) {

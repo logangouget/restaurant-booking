@@ -26,7 +26,7 @@ describe('Schedule table lock removal E2E - Table locking saga', () => {
     );
   });
 
-  afterAll(async () => {
+  afterEach(async () => {
     await testingModule.close();
   });
 
@@ -54,17 +54,11 @@ describe('Schedule table lock removal E2E - Table locking saga', () => {
     });
 
     it('should remove the lock', async () => {
-      await retryWithDelay(
-        async () => {
-          const table = await tableEventStoreRepository.findTableById(tableId);
+      await retryWithDelay(async () => {
+        const table = await tableEventStoreRepository.findTableById(tableId);
 
-          expect(table.locks).toHaveLength(0);
-        },
-        {
-          delay: 1000,
-          maxRetries: 5,
-        },
-      );
+        expect(table.locks).toHaveLength(0);
+      });
     });
   });
 });

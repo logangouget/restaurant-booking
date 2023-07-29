@@ -1,3 +1,4 @@
+import { getValidFutureTimeSlot } from '@/test/get-future-date';
 import { setupTestingModule } from '@/test/setup-testing-module';
 import { INestApplication } from '@nestjs/common/interfaces';
 import { TestingModule } from '@nestjs/testing';
@@ -24,7 +25,7 @@ describe('List available booking slots E2E - /booking-slots (GET)', () => {
     eventStoreService = app.get<EventStoreService>(EVENT_STORE_SERVICE);
   });
 
-  afterAll(async () => {
+  afterEach(async () => {
     await testingModule.close();
   });
 
@@ -109,13 +110,7 @@ describe('List available booking slots E2E - /booking-slots (GET)', () => {
     const tableId = uuid();
     const bookingId = uuid();
 
-    const timeSlotFromDate = new Date('2023-01-01T12:00Z');
-    const timeSlotToDate = new Date('2023-01-01T14:00Z');
-
-    const timeSlot = {
-      from: timeSlotFromDate,
-      to: timeSlotToDate,
-    };
+    const timeSlot = getValidFutureTimeSlot();
 
     beforeEach(async () => {
       await bookSlot({
@@ -131,8 +126,8 @@ describe('List available booking slots E2E - /booking-slots (GET)', () => {
       const data = await request(app.getHttpServer())
         .get('/booking-slots')
         .query({
-          startDate: timeSlotFromDate.toISOString().split('T')[0],
-          endDate: timeSlotToDate.toISOString().split('T')[0],
+          startDate: timeSlot.from.toISOString(),
+          endDate: timeSlot.to.toISOString(),
           people: 4,
         });
 
@@ -140,12 +135,16 @@ describe('List available booking slots E2E - /booking-slots (GET)', () => {
         'availabilities',
         expect.arrayContaining([
           expect.objectContaining({
-            day: timeSlotFromDate.toISOString().split('T')[0],
+            day: timeSlot.from.toISOString().split('T')[0],
             slots: expect.arrayContaining([
               expect.objectContaining({
                 availableTables: [tableId],
-                startTime: '19:00',
-                endTime: '21:00',
+                startTime: getValidFutureTimeSlot({
+                  evening: true,
+                }).from.toISOString(),
+                endTime: getValidFutureTimeSlot({
+                  evening: true,
+                }).to.toISOString(),
               }),
             ]),
           }),
@@ -159,13 +158,9 @@ describe('List available booking slots E2E - /booking-slots (GET)', () => {
     const tableId = uuid();
     const bookingId = uuid();
 
-    const timeSlotFromDate = new Date('2023-01-01T19:00Z');
-    const timeSlotToDate = new Date('2023-01-01T21:00Z');
-
-    const timeSlot = {
-      from: timeSlotFromDate,
-      to: timeSlotToDate,
-    };
+    const timeSlot = getValidFutureTimeSlot({
+      evening: true,
+    });
 
     beforeEach(async () => {
       await bookSlot({
@@ -181,8 +176,8 @@ describe('List available booking slots E2E - /booking-slots (GET)', () => {
       const data = await request(app.getHttpServer())
         .get('/booking-slots')
         .query({
-          startDate: timeSlotFromDate.toISOString().split('T')[0],
-          endDate: timeSlotToDate.toISOString().split('T')[0],
+          startDate: timeSlot.from.toISOString().split('T')[0],
+          endDate: timeSlot.to.toISOString().split('T')[0],
           people: 4,
         });
 
@@ -190,12 +185,12 @@ describe('List available booking slots E2E - /booking-slots (GET)', () => {
         'availabilities',
         expect.arrayContaining([
           expect.objectContaining({
-            day: timeSlotFromDate.toISOString().split('T')[0],
+            day: timeSlot.from.toISOString().split('T')[0],
             slots: expect.arrayContaining([
               expect.objectContaining({
                 availableTables: [tableId],
-                startTime: '12:00',
-                endTime: '14:00',
+                startTime: getValidFutureTimeSlot().from.toISOString(),
+                endTime: getValidFutureTimeSlot().to.toISOString(),
               }),
             ]),
           }),

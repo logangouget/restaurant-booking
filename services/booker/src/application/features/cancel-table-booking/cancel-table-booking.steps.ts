@@ -1,14 +1,14 @@
-import {
-  TableBookingEventStoreRepositoryInterface,
-  TABLE_BOOKING_EVENT_STORE_REPOSITORY_INTERFACE,
-} from '@/infrastructure/repository/event-store/table-booking.event-store.repository.interface';
-import { Test, TestingModule } from '@nestjs/testing';
-import { loadFeature, defineFeature } from 'jest-cucumber';
-import { CancelTableBookingHandler } from './cancel-table-booking.handler';
-import { TableBooking } from '@/domain/table-booking';
-import { CancelTableBookingCommand } from './cancel-table-booking.command';
 import { TableBookingNotFoundError } from '@/application/errors';
-import { TimeSlot } from '@/domain/time-slot.value-object';
+import { TableBooking } from '@/domain/table-booking';
+import {
+  TABLE_BOOKING_EVENT_STORE_REPOSITORY_INTERFACE,
+  TableBookingEventStoreRepositoryInterface,
+} from '@/infrastructure/repository/event-store/table-booking.event-store.repository.interface';
+import { getValidFutureTimeSlot } from '@/test/get-future-date';
+import { Test, TestingModule } from '@nestjs/testing';
+import { defineFeature, loadFeature } from 'jest-cucumber';
+import { CancelTableBookingCommand } from './cancel-table-booking.command';
+import { CancelTableBookingHandler } from './cancel-table-booking.handler';
 
 const feature = loadFeature('./cancel-table-booking.feature', {
   loadRelativePath: true,
@@ -44,23 +44,17 @@ defineFeature(feature, (test) => {
     let result: TableBooking;
     let bookingId: string;
 
-    given(
-      /^an initiated booking for table "(.*)" from "(.*)" to "(.*)"$/,
-      (tableId: string, bookingFrom: string, bookingTo: string) => {
-        const booking = new TableBooking();
-        booking.initiate(
-          tableId,
-          new TimeSlot(new Date(bookingFrom), new Date(bookingTo)),
-        );
-        booking.commit();
+    given(/^an initiated booking for table "(.*)"$/, (tableId: string) => {
+      const booking = new TableBooking();
+      booking.initiate(tableId, getValidFutureTimeSlot());
+      booking.commit();
 
-        bookingId = booking.id;
+      bookingId = booking.id;
 
-        mockedTableBookingEventStoreRepository.findBookingById.mockResolvedValueOnce(
-          booking,
-        );
-      },
-    );
+      mockedTableBookingEventStoreRepository.findBookingById.mockResolvedValueOnce(
+        booking,
+      );
+    });
 
     when('booking is going to be cancelled', async () => {
       result = await cancelTableBooking.execute(
@@ -76,14 +70,11 @@ defineFeature(feature, (test) => {
   test('Table booking is not found', ({ given, when, then }) => {
     let error: TableBookingNotFoundError;
 
-    given(
-      /^a non-existing booking for table "(.*)" from "(.*)" to "(.*)"$/,
-      () => {
-        mockedTableBookingEventStoreRepository.findBookingById.mockResolvedValueOnce(
-          null,
-        );
-      },
-    );
+    given(/^a non-existing booking for table "(.*)"$/, () => {
+      mockedTableBookingEventStoreRepository.findBookingById.mockResolvedValueOnce(
+        null,
+      );
+    });
 
     when('booking is going to be cancelled', async () => {
       try {

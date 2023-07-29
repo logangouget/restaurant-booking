@@ -19,4 +19,5 @@ export const timeSlotConfiguration = {
       minutes: 0,
     },
   },
+  timezone: 'Europe/Paris',
 } as const;

@@ -16,25 +16,75 @@ export class TimeSlot {
     );
   }
 
+  private isValidMorningTimeSlot({
+    fromHours,
+    fromMinutes,
+    toHours,
+    toMinutes,
+  }: {
+    fromHours: number;
+    fromMinutes: number;
+    toHours: number;
+    toMinutes: number;
+  }): boolean {
+    return (
+      fromHours === timeSlotConfiguration.morning.from.hours &&
+      fromMinutes === timeSlotConfiguration.morning.from.minutes &&
+      toHours === timeSlotConfiguration.morning.to.hours &&
+      toMinutes === timeSlotConfiguration.morning.to.minutes
+    );
+  }
+
+  private isValidEveningTimeSlot({
+    fromHours,
+    fromMinutes,
+    toHours,
+    toMinutes,
+  }: {
+    fromHours: number;
+    fromMinutes: number;
+    toHours: number;
+    toMinutes: number;
+  }): boolean {
+    return (
+      fromHours === timeSlotConfiguration.evening.from.hours &&
+      fromMinutes === timeSlotConfiguration.evening.from.minutes &&
+      toHours === timeSlotConfiguration.evening.to.hours &&
+      toMinutes === timeSlotConfiguration.evening.to.minutes
+    );
+  }
+
+  private isFutureTimeSlot(): boolean {
+    const now = new Date();
+
+    return (
+      this.from.getTime() > now.getTime() && this.to.getTime() > now.getTime()
+    );
+  }
+
   public isValid(): boolean {
-    const fromHour = this.from.getHours();
+    const fromHours = this.from.getHours();
     const fromMinutes = this.from.getMinutes();
 
-    const toHour = this.to.getHours();
+    const toHours = this.to.getHours();
     const toMinutes = this.to.getMinutes();
 
-    const isValidMorning =
-      fromHour === timeSlotConfiguration.morning.from.hours &&
-      fromMinutes === timeSlotConfiguration.morning.from.minutes &&
-      toHour === timeSlotConfiguration.morning.to.hours &&
-      toMinutes === timeSlotConfiguration.morning.to.minutes;
+    const isValidMorning = this.isValidMorningTimeSlot({
+      fromHours,
+      fromMinutes,
+      toHours,
+      toMinutes,
+    });
 
-    const isValidEvening =
-      fromHour === timeSlotConfiguration.evening.from.hours &&
-      fromMinutes === timeSlotConfiguration.evening.from.minutes &&
-      toHour === timeSlotConfiguration.evening.to.hours &&
-      toMinutes === timeSlotConfiguration.evening.to.minutes;
+    const isValidEvening = this.isValidEveningTimeSlot({
+      fromHours,
+      fromMinutes,
+      toHours,
+      toMinutes,
+    });
 
-    return isValidMorning || isValidEvening;
+    const isFutureTimeSlot = this.isFutureTimeSlot();
+
+    return isFutureTimeSlot && (isValidMorning || isValidEvening);
   }
 }
