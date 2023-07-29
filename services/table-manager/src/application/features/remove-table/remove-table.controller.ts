@@ -1,7 +1,13 @@
-import { Controller, Delete, Param, NotFoundException } from '@nestjs/common';
+import {
+  Controller,
+  Delete,
+  Param,
+  NotFoundException,
+  ConflictException,
+} from '@nestjs/common';
 import { CommandBus } from '@nestjs/cqrs';
 import { RemoveTableCommand } from './remove-table.command';
-import { TableNotFoundError } from '@/application/errors';
+import { TableLockedError, TableNotFoundError } from '@/application/errors';
 import { ApiProperty, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { RemoveTableResponse } from './dto/remove-table.response';
 
@@ -23,6 +29,10 @@ export class RemoveTableController {
     status: 404,
     description: 'The table does not exist.',
   })
+  @ApiResponse({
+    status: 409,
+    description: 'The table is locked.',
+  })
   @Delete('tables/:id')
   async addTable(@Param('id') id: string): Promise<RemoveTableResponse> {
     const command = new RemoveTableCommand(id);
@@ -33,6 +43,10 @@ export class RemoveTableController {
       if (error instanceof TableNotFoundError) {
         throw new NotFoundException(error.message);
       }
+      if (error instanceof TableLockedError) {
+        throw new ConflictException(error.message);
+      }
+      throw error;
     }
 
     return new RemoveTableResponse(id);
