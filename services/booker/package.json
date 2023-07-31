@@ -20,7 +20,7 @@
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "test:integration": "jest --config ./test/jest-integration.json",
     "generate-migrations": "drizzle-kit generate:pg",
-    "run-migrations:dev": "nest start --entryFile src/infrastructure/repository/database/migration"
+    "migrate:dev": "nest start --entryFile src/infrastructure/repository/database/migration"
   },
   "dependencies": {
     "@eventstore/db-client": "^5.0.1",

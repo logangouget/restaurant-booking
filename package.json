@@ -5,7 +5,9 @@
   "main": "index.js",
   "scripts": {
     "test": "pnpm -r test",
-    "build": "pnpm -r build"
+    "build": "pnpm -r build",
+    "migrate:dev": "pnpm --filter './services/table-manager' migrate:dev && pnpm -r --filter './services/booker' migrate:dev",
+    "start:dev": "pnpm -r --filter './services/*' start:dev"
   },
   "keywords": [],
   "author": "",

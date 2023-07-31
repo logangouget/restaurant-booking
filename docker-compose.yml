@@ -19,7 +19,7 @@ services:
       - ./data:/data
       
   postgres:
-    image: postgres:latest
+    image: postgres:15.3
     ports:
       - "5432:5432"
     environment:
@@ -28,7 +28,7 @@ services:
       - POSTGRES_DB=restaurant-booking
 
   pgadmin:
-    image: dpage/pgadmin4:latest
+    image: dpage/pgadmin4:7.5
     ports:
       - "8080:80"
     environment:
@@ -38,13 +38,13 @@ services:
       - pgadmin_config:/var/lib/pgadmin
 
   redis:
-    image: redis:latest
+    image: redis:7
     ports:
       - "6379:6379"
   
   bullboard:
     container_name: bullboard
-    image: deadly0/bull-board
+    image: deadly0/bull-board:3.2.6
     restart: always
     ports:
       - 6300:3000

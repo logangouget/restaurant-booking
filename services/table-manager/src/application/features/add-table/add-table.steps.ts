@@ -37,7 +37,7 @@ defineFeature(feature, (test) => {
     addTable = testingModule.get<AddTableHandler>(AddTableHandler);
   });
 
-  test('Adding a table as a manager', ({ when, then }) => {
+  test('Adding a table', ({ when, then }) => {
     beforeAll(() => {
       mockedTableEventStoreRepository.findTableById.mockResolvedValue(null);
     });
