@@ -19,8 +19,11 @@ Before you can run this project, you need to have the following installed on you
 1. Clone this repository
 2. Run `pnpm install` to install dependencies
 3. Run `docker compose up -d` to start services
-4. Run `pnpm migrate:dev` to run migrations
-5. Run `pnpm start:dev` to start both services
+4. Run bash `cp services/booker/.env.dist services/booker/.env` to copy env default
+5. Run bash `cp services/table-manager/.env.dist services/booker/.env` to copy env default
+6. Run `pnpm build` to build projects
+7. Run `pnpm migrate:dev` to run migrations
+8. Run `pnpm start:dev` to start both services
 
 ## API documentation 
 
